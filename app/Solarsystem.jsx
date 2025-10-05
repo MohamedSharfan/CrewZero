@@ -156,9 +156,14 @@ const SolarSystem = () => {
     eccentricity: 0.1,
     inclination: 0,
     mass: 1e15,
+    diameter: null, // km
     composition: "Rocky",
     perihelionArg: 0,
   });
+
+  // manual add by designation (e.g., "99942" or "2025 AB")
+  const [manualDesignation, setManualDesignation] = useState("");
+  const [manualName, setManualName] = useState("");
 
   const calculateOrbitalPeriod = (distanceKm) => {
     const distanceAU = distanceKm / 149.6;
@@ -171,6 +176,22 @@ const SolarSystem = () => {
     return orbitCircumference / periodSeconds / 1000;
   };
 
+  const calculateDiameterFromMass = (mass, composition = "Rocky") => {
+    // Density in kg/m³
+    const densities = {
+      Rocky: 2500,
+      Metallic: 7800,
+      Icy: 900,
+      Carbonaceous: 1400,
+      Mixed: 2000,
+    };
+    const density = densities[composition] || 2500;
+    const volume = mass / density; // m³
+    const radius = Math.pow((3 * volume) / (4 * Math.PI), 1/3); // meters
+    const diameter = (2 * radius) / 1000; // convert to km
+    return diameter;
+  };
+
   const addCustomObject = () => {
     if (!newObject.name.trim()) {
       alert("Please enter a name for the object");
@@ -181,8 +202,12 @@ const SolarSystem = () => {
     const velocity = calculateOrbitalVelocity(newObject.distanceKm, period);
     const distancePixels = (newObject.distanceKm / 4515.0) * 350 + 30;
 
+    // Calculate diameter if not provided
+    const diameter = newObject.diameter || calculateDiameterFromMass(newObject.mass, newObject.composition);
+
     const customBody = {
       ...newObject,
+      diameter: diameter,
       periodDays: period,
       velocityKmS: velocity,
       distancePixels: distancePixels,
@@ -203,6 +228,7 @@ const SolarSystem = () => {
       eccentricity: 0.1,
       inclination: 0,
       mass: 1e15,
+      diameter: null,
       composition: "Rocky",
       perihelionArg: 0,
     });
@@ -312,7 +338,27 @@ const SolarSystem = () => {
       }
     }
 
-    const impactVelocity = object.velocityKmS || 20;
+    // Calculate impact velocity (relative velocity at collision)
+    // Use object's orbital velocity as baseline
+    let impactVelocity = object.velocityKmS || 20;
+    
+    // If object has velocity, calculate relative velocity to Earth
+    if (object.velocityKmS && earth.velocityKmS) {
+      // Approximate relative velocity considering both orbital velocities
+      // For head-on collision: v_rel ≈ v_object + v_earth
+      // For same-direction: v_rel ≈ |v_object - v_earth|
+      // Use average case: geometric mean
+      const earthVel = earth.velocityKmS;
+      const objectVel = object.velocityKmS;
+      
+      // Account for inclination and eccentricity effects
+      const inclinationFactor = 1 + (object.inclination || 0) / 90;
+      const eccentricityFactor = 1 + object.eccentricity * 0.5;
+      
+      // Estimate relative velocity (typically 15-40 km/s for NEOs)
+      impactVelocity = Math.sqrt(objectVel * objectVel + earthVel * earthVel) * inclinationFactor * eccentricityFactor;
+    }
+    
     const impactVelocityMs = impactVelocity * 1000;
 
     const kineticEnergy = 0.5 * object.mass * impactVelocityMs ** 2;
@@ -440,11 +486,15 @@ const SolarSystem = () => {
         ctx.fill();
 
         celestialBodies.forEach((body, index) => {
-          // If NASA state-vector is available and user chose to use NASA data, project that position to canvas pixels.
+          // Calculate position based on type and data availability
           let x, y;
-          if (useNASAData && body.nasaState) {
-            // body.nasaState.x/y are in million km; convert to pixels using same scaling as distancePixels
-            // We center the solar system at (centerX, centerY) and place coordinates relative to Sun
+          
+          // For planets with NASA state-vector data, use the static position
+          // For asteroids/custom objects, ALWAYS calculate position using Kepler's laws for animation
+          const useStaticNASAPosition = useNASAData && body.nasaState && body.type === "planet";
+          
+          if (useStaticNASAPosition) {
+            // Use static NASA position for planets (they don't animate in this mode)
             const scale = (350 / 4515.0) * zoom; // pixels per million km (approx)
             const vx = body.nasaState.x; // million km
             const vy = body.nasaState.y; // million km
@@ -452,7 +502,7 @@ const SolarSystem = () => {
             x = centerX + vx * scale;
             y = centerY + vy * scale;
           } else {
-            // Calculate orbital parameters
+            // Calculate orbital position using Kepler's laws (for all asteroids and non-NASA planets)
             const omega = ((body.perihelionArg || 0) * Math.PI) / 180;
             const n = (2 * Math.PI) / body.periodDays;
             const initialOffset =
@@ -491,8 +541,12 @@ const SolarSystem = () => {
           ctx.lineWidth = body.type === "planet" ? 1 : 2.5;
           ctx.setLineDash(body.type === "planet" ? [] : [5, 5]);
 
-          // Only draw the analytic Kepler orbit ellipse when we computed orbital params (i.e., Kepler fallback)
-          if (!(useNASAData && body.nasaState)) {
+          // Draw the Kepler orbit ellipse
+          // For asteroids and custom objects, always draw the orbit
+          // For planets, only draw if not using NASA data (to avoid confusion with NASA-driven positions)
+          const shouldDrawOrbit = body.type !== "planet" || !(useNASAData && body.nasaState);
+          
+          if (shouldDrawOrbit && body.distancePixels && body.eccentricity !== undefined) {
             // Calculate orbital parameters for drawing
             const drawOmega = ((body.perihelionArg || 0) * Math.PI) / 180;
             const drawA = body.distancePixels * zoom;
@@ -507,11 +561,10 @@ const SolarSystem = () => {
             ctx.ellipse(-drawC, 0, drawA, drawB, 0, 0, 2 * Math.PI);
             ctx.stroke();
             ctx.restore();
-          } else {
-            // If using NASA state vectors, we won't draw the Kepler ellipse (it would be misleading).
-            // Clear any dashed stroke state used for custom objects.
-            ctx.setLineDash([]);
           }
+          
+          // Reset line dash after drawing orbit
+          ctx.setLineDash([]);
 
           const displayRadius = body.radius * Math.min(zoom, 2);
 
@@ -769,6 +822,16 @@ const SolarSystem = () => {
     setCurrentSimulationDate(new Date(simulationStartDate));
   };
 
+  const syncToNow = () => {
+    // Reset elapsed time to 0
+    elapsedSeconds.current = 0;
+    // Set current simulation date to now
+    const now = new Date();
+    setCurrentSimulationDate(now);
+    // Set speed to real-time
+    setSpeed(1);
+  };
+
   const removeAllCustomObjects = () => {
     setCelestialBodies(planetsWithPixelDistance);
   };
@@ -986,6 +1049,16 @@ const SolarSystem = () => {
                 vz: firstVector.VZ,
               });
 
+              // Try to extract velocity from NASA physical data
+              let finalVelocity = orbitalElements.velocity;
+              if (planetData.physicalData) {
+                const phys = planetData.physicalData;
+                if (phys["Orbital speed"]) finalVelocity = phys["Orbital speed"];
+                else if (phys["Mean orbital velocity"]) finalVelocity = phys["Mean orbital velocity"];
+                else if (phys["Orbit vel., km/s"]) finalVelocity = phys["Orbit vel., km/s"];
+                else if (phys["Orbital velocity"]) finalVelocity = phys["Orbital velocity"];
+              }
+
               return {
                 ...planet,
                 name: planetData.name,
@@ -994,7 +1067,7 @@ const SolarSystem = () => {
                 distanceKm: orbitalElements.semiMajorAxis,
                 eccentricity: orbitalElements.eccentricity,
                 periodDays: orbitalElements.period,
-                velocityKmS: orbitalElements.velocity,
+                velocityKmS: finalVelocity, // Use NASA velocity if available
                 perihelionArg: orbitalElements.argumentOfPeriapsis,
                 distancePixels:
                   (orbitalElements.semiMajorAxis / 4515.0) * 350 + 30,
@@ -1054,34 +1127,30 @@ const SolarSystem = () => {
       const jdNow = dateToJulianDate(today);
       const jdTomorrow = jdNow + 1;
 
-      const params = new URLSearchParams({
+      const params = {
         format: "json",
         COMMAND: `'${designation}'`,
         EPHEM_TYPE: "VECTORS",
-        CENTER: "@sun",
-        REF_PLANE: "ECLIPTIC",
-        REF_SYSTEM: "J2000",
-        VEC_LABELS: "YES",
-        VEC_DELTA_T: "NO",
-        OUT_UNITS: "KM-S",
-        CSV_FORMAT: "YES",
-        OBJ_DATA: "YES",
-        VEC_TABLE: "3",
-        START_TIME: jdNow.toString(),
-        STOP_TIME: jdTomorrow.toString(),
-        STEP_SIZE: "1d",
-      });
+        CENTER: `'@sun'`,
+        REF_PLANE: `'ECLIPTIC'`,
+        REF_SYSTEM: `'J2000'`,
+        VEC_LABELS: `'YES'`,
+        VEC_DELTA_T: `'NO'`,
+        OUT_UNITS: `'KM-S'`,
+        CSV_FORMAT: `'YES'`,
+        OBJ_DATA: `'YES'`,
+        VEC_TABLE: `'3'`,
+        START_TIME: `'JD ${jdNow}'`,
+        STOP_TIME: `'JD ${jdTomorrow}'`,
+        STEP_SIZE: `'1 d'`,
+      };
 
-      const url = `/api/nasa-horizons?${params.toString()}`;
+      const data = await fetchNASAHorizonsAPI(params);
 
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-
-      if (data.result) {
-        const vectorData = parseHorizonsVectorData(data.result);
+      if (data && data.result) {
+        // Parse full NASA response to get physical data (diameter, mass, etc.)
+        const fullData = parseFullNasaStringToJson(data);
+        const vectorData = parseHorizonsVectorData(data);
 
         if (vectorData) {
           const orbitalElements = stateVectorsToOrbitalElements(vectorData);
@@ -1089,6 +1158,45 @@ const SolarSystem = () => {
           const velocity = orbitalElements.velocity;
           const distancePixels =
             (orbitalElements.semiMajorAxis / 4515.0) * 350 + 30;
+
+          // Extract physical data from NASA response
+          let diameter = null; // km
+          let mass = 1e13; // default fallback mass (kg)
+          let composition = "Rocky"; // default
+          let nasaVelocity = null; // km/s from NASA data
+
+          if (fullData && fullData.physicalData) {
+            const phys = fullData.physicalData;
+            
+            // Try different diameter keys NASA uses
+            if (phys["Diameter"]) diameter = phys["Diameter"];
+            else if (phys["Mean diameter"]) diameter = phys["Mean diameter"];
+            else if (phys["Radius (km)"]) diameter = phys["Radius (km)"] * 2;
+            else if (phys["Radius, km"]) diameter = phys["Radius, km"] * 2;
+            else if (phys["Mean radius (km)"]) diameter = phys["Mean radius (km)"] * 2;
+            
+            // Try to get mass
+            if (phys["Mass (10^21 kg)"]) mass = phys["Mass (10^21 kg)"] * 1e21;
+            else if (phys["Mass, kg"]) mass = phys["Mass, kg"];
+            else if (phys["Mass x10^22 (kg)"]) mass = phys["Mass x10^22 (kg)"] * 1e22;
+            
+            // Try to get velocity from NASA data
+            if (phys["Orbital speed"]) nasaVelocity = phys["Orbital speed"];
+            else if (phys["Mean orbital velocity"]) nasaVelocity = phys["Mean orbital velocity"];
+            else if (phys["Orbit vel., km/s"]) nasaVelocity = phys["Orbit vel., km/s"];
+            else if (phys["Orbital velocity"]) nasaVelocity = phys["Orbital velocity"];
+            
+            // If no mass but we have diameter, calculate mass from diameter
+            if (!phys["Mass (10^21 kg)"] && !phys["Mass, kg"] && diameter) {
+              const density = 2500; // kg/m³ for rocky asteroids
+              const radiusM = (diameter * 1000) / 2; // convert km to m
+              const volume = (4/3) * Math.PI * Math.pow(radiusM, 3);
+              mass = volume * density;
+            }
+          }
+
+          // Use NASA velocity if available, otherwise use calculated velocity from state vectors
+          const finalVelocity = nasaVelocity || velocity;
 
           const asteroid = {
             name: name,
@@ -1098,14 +1206,16 @@ const SolarSystem = () => {
             distanceKm: orbitalElements.semiMajorAxis,
             eccentricity: orbitalElements.eccentricity,
             perihelionArg: orbitalElements.argumentOfPeriapsis,
-            mass: 1e13,
-            composition: "Rocky",
+            mass: mass,
+            diameter: diameter, // km
+            composition: composition,
             periodDays: period,
-            velocityKmS: velocity,
+            velocityKmS: finalVelocity, // Use NASA velocity if available, otherwise calculated
             distancePixels: distancePixels,
             angle: 0,
             id: Date.now(),
             nasaData: true,
+            physicalData: fullData?.physicalData || null,
             nasaState: {
               x: vectorData.x / 1000000,
               y: vectorData.y / 1000000,
@@ -1114,12 +1224,17 @@ const SolarSystem = () => {
               vy: vectorData.vy,
               vz: vectorData.vz,
             },
-            nasaTimestamp: startDate,
+            nasaTimestamp: vectorData.date,
           };
 
           setCelestialBodies((prev) => [...prev, asteroid]);
+          
+          const diameterText = diameter ? `\n• Diameter: ${diameter.toFixed(2)} km` : "";
+          const massText = mass ? `\n• Mass: ${mass.toExponential(2)} kg` : "";
+          const velocityText = `\n• Orbital Velocity: ${finalVelocity.toFixed(2)} km/s${nasaVelocity ? ' (NASA)' : ' (calculated)'}`;
+          
           alert(
-            `Successfully added ${name}!\n\nOrbital Details:\n• Distance: ${orbitalElements.semiMajorAxis.toFixed(
+            `Successfully added ${name}!${diameterText}${massText}${velocityText}\n\nOrbital Details:\n• Distance: ${orbitalElements.semiMajorAxis.toFixed(
               1
             )} M km\n• Period: ${period.toFixed(
               1
@@ -1135,6 +1250,23 @@ const SolarSystem = () => {
       console.error(`Error fetching asteroid ${name}:`, error);
       alert(`Network error loading ${name}.\n\nDetails: ${error.message}`);
     } finally {
+      setIsLoadingNASAData(false);
+    }
+  };
+
+  const handleAddByDesignation = async () => {
+    const designation = manualDesignation.trim();
+    if (!designation) return;
+
+    const displayName = manualName.trim() || designation;
+
+    try {
+      await addRealAsteroid(displayName, designation);
+      // clear inputs on success
+      setManualDesignation("");
+      setManualName("");
+    } catch (e) {
+      // addRealAsteroid already alerts on failure; ensure loading flag cleared
       setIsLoadingNASAData(false);
     }
   };
@@ -1171,14 +1303,32 @@ const SolarSystem = () => {
         .map((line) => line.trim())
         .filter(Boolean);
 
-      if (lines.length < 2) {
+      if (lines.length === 0) {
         throw new Error("Insufficient data lines in response");
       }
 
-      // Parse CSV format
-      const [dateStr, vectors, velocities] = lines;
-      const [, x, y, z] = vectors.split(",").map((v) => parseFloat(v));
-      const [, vx, vy, vz] = velocities.split(",").map((v) => parseFloat(v));
+      // Parse CSV format - all data is on ONE line, comma-separated
+      // Format: JDTDB, Calendar Date, X, Y, Z, VX, VY, VZ, LT, RG, RR
+      const firstLine = lines[0];
+      const values = firstLine.split(",").map((v) => v.trim());
+
+      if (values.length < 11) {
+        throw new Error(`Insufficient columns in data: ${values.length}`);
+      }
+
+      const jdtdb = parseFloat(values[0]);
+      const dateStr = values[1];
+      const x = parseFloat(values[2]);
+      const y = parseFloat(values[3]);
+      const z = parseFloat(values[4]);
+      const vx = parseFloat(values[5]);
+      const vy = parseFloat(values[6]);
+      const vz = parseFloat(values[7]);
+
+      // Validate parsed values
+      if (isNaN(x) || isNaN(y) || isNaN(z) || isNaN(vx) || isNaN(vy) || isNaN(vz)) {
+        throw new Error("Failed to parse numeric values from data");
+      }
 
       // Values are already in KM and KM/S due to OUT_UNITS parameter
       return {
@@ -1189,6 +1339,7 @@ const SolarSystem = () => {
         vy,
         vz, // Velocity in kilometers per second
         date: dateStr,
+        jdtdb: jdtdb,
         frame: "J2000",
         center: "@sun",
         units: "KM-S",
@@ -1304,6 +1455,13 @@ const SolarSystem = () => {
         </button>
 
         <button
+          onClick={syncToNow}
+          className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors"
+        >
+          🔄 Sync Now
+        </button>
+
+        <button
           onClick={() => setShowInfo(!showInfo)}
           className="px-5 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors"
         >
@@ -1334,44 +1492,131 @@ const SolarSystem = () => {
         <div className="flex gap-2 flex-wrap justify-center">
           <button
             onClick={() => addRealAsteroid("Apophis", "99942")}
-            disabled={isLoadingNASAData}
+            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Apophis")}
             className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
           >
             Apophis (99942)
           </button>
+
           <button
             onClick={() => addRealAsteroid("Eros", "433")}
-            disabled={isLoadingNASAData}
+            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Eros")}
             className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
           >
             Eros (433)
           </button>
+
           <button
             onClick={() => addRealAsteroid("Bennu", "101955")}
-            disabled={isLoadingNASAData}
+            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Bennu")}
             className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
           >
             Bennu (101955)
           </button>
+
           <button
             onClick={() => addRealAsteroid("Ryugu", "162173")}
-            disabled={isLoadingNASAData}
+            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Ryugu")}
             className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
           >
             Ryugu (162173)
           </button>
+
           <button
             onClick={() => addRealAsteroid("Vesta", "4")}
-            disabled={isLoadingNASAData}
+            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Vesta")}
             className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
           >
             Vesta (4)
+          </button>
+
+          {/* More important/main-belt asteroids */}
+          <button
+            onClick={() => addRealAsteroid("Ceres", "1")}
+            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Ceres")}
+            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Ceres (1)
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("Pallas", "2")}
+            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Pallas")}
+            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Pallas (2)
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("Juno", "3")}
+            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Juno")}
+            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Juno (3)
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("Hygiea", "10")}
+            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Hygiea")}
+            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Hygiea (10)
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("Interamnia", "704")}
+            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Interamnia")}
+            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Interamnia (704)
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("Itokawa", "25143")}
+            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Itokawa")}
+            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Itokawa (25143)
           </button>
         </div>
         <p className="text-gray-400 text-xs text-center mt-2 italic">
           Real asteroids fetched from NASA Horizons with actual orbital
           parameters
         </p>
+
+        <div className="mt-3 flex items-center justify-center gap-2">
+          <input
+            type="text"
+            placeholder="Designation (e.g. 99942 or 2025 AB)"
+            value={manualDesignation}
+            onChange={(e) => setManualDesignation(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleAddByDesignation();
+              }
+            }}
+            className="px-3 py-2 bg-gray-700 text-white rounded w-56"
+          />
+          <input
+            type="text"
+            placeholder="Optional display name"
+            value={manualName}
+            onChange={(e) => setManualName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleAddByDesignation();
+              }
+            }}
+            className="px-3 py-2 bg-gray-700 text-white rounded w-44"
+          />
+          <button
+            onClick={() => handleAddByDesignation()}
+            disabled={isLoadingNASAData || !manualDesignation.trim()}
+            className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Add
+          </button>
+        </div>
         <p className="text-yellow-400 text-xs text-center mt-1">
           If asteroids don't appear, check browser console for CORS errors. NASA
           API may require server proxy.
@@ -1581,6 +1826,28 @@ const SolarSystem = () => {
 
             <div>
               <label className="text-gray-300 text-sm block mb-1">
+                Diameter (km, optional)
+              </label>
+              <input
+                type="number"
+                value={newObject.diameter || ""}
+                onChange={(e) =>
+                  setNewObject({
+                    ...newObject,
+                    diameter: e.target.value ? parseFloat(e.target.value) : null,
+                  })
+                }
+                className="w-full px-3 py-2 bg-gray-700 text-white rounded"
+                step="0.1"
+                placeholder="Auto-calculated from mass"
+              />
+              <span className="text-xs text-gray-400">
+                Leave empty to auto-calculate from mass
+              </span>
+            </div>
+
+            <div>
+              <label className="text-gray-300 text-sm block mb-1">
                 Composition
               </label>
               <select
@@ -1672,6 +1939,13 @@ const SolarSystem = () => {
               ).toFixed(2)}{" "}
               km/s
             </p>
+            {!newObject.diameter && newObject.mass && (
+              <p className="text-sm text-gray-300 mt-1">
+                <strong>Estimated Diameter:</strong>{" "}
+                {calculateDiameterFromMass(newObject.mass, newObject.composition).toFixed(3)} km
+                <span className="text-xs text-gray-400 ml-2">(from mass & composition)</span>
+              </p>
+            )}
           </div>
 
           <div className="mt-6 flex gap-3 justify-end">
@@ -1702,6 +1976,7 @@ const SolarSystem = () => {
                     distanceKm: 2678,
                     eccentricity: 0.967,
                     mass: 2.2e14,
+                    diameter: 11, // km (approximate)
                     composition: "Icy",
                     perihelionArg: 111,
                     inclination: 0,
@@ -1721,6 +1996,7 @@ const SolarSystem = () => {
                     distanceKm: 414,
                     eccentricity: 0.076,
                     mass: 9.39e20,
+                    diameter: 939.4, // km
                     composition: "Rocky",
                     perihelionArg: 73,
                     inclination: 0,
@@ -1740,6 +2016,7 @@ const SolarSystem = () => {
                     distanceKm: 5906,
                     eccentricity: 0.244,
                     mass: 1.31e22,
+                    diameter: 2376.6, // km
                     composition: "Icy",
                     perihelionArg: 113,
                     inclination: 0,
@@ -1759,6 +2036,7 @@ const SolarSystem = () => {
                     distanceKm: 168,
                     eccentricity: 0.204,
                     mass: 7.3e10,
+                    diameter: 0.492, // km
                     composition: "Carbonaceous",
                     perihelionArg: 66,
                     inclination: 0,
@@ -1778,6 +2056,7 @@ const SolarSystem = () => {
                     distanceKm: 149.8,
                     eccentricity: 0.015,
                     mass: 5e15,
+                    diameter: 1.38, // km (calculated from mass)
                     composition: "Metallic",
                     perihelionArg: 102,
                     inclination: 0,
@@ -1986,6 +2265,12 @@ const SolarSystem = () => {
                   <strong>Mass:</strong>{" "}
                   {selectedObjectForAnalysis.mass.toExponential(2)} kg
                 </div>
+                {selectedObjectForAnalysis.diameter && (
+                  <div>
+                    <strong>Diameter:</strong>{" "}
+                    {selectedObjectForAnalysis.diameter.toFixed(2)} km
+                  </div>
+                )}
                 <div>
                   <strong>Composition:</strong>{" "}
                   {selectedObjectForAnalysis.composition}
@@ -2058,7 +2343,24 @@ const SolarSystem = () => {
               </div>
             </div>
 
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  // Get exact values from impact analysis report
+                  const impactVelocity = impactData.impactVelocity; // km/s from report
+                  const diameter = selectedObjectForAnalysis.diameter || 'unknown'; // km
+                  const composition = selectedObjectForAnalysis.composition || 'Rocky';
+                  
+                  // Construct API URL with parameters
+                  const apiUrl = `https://api.example.com/test?velocity=${impactVelocity}&diameter=${diameter}&composition=${composition}`;
+                  
+                  // Open in new tab
+                  window.open(apiUrl, '_blank');
+                }}
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold"
+              >
+                Send to Test API
+              </button>
               <button
                 onClick={() => setShowImpactAnalysis(false)}
                 className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold"
