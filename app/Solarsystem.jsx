@@ -192,6 +192,61 @@ const SolarSystem = () => {
     return diameter;
   };
 
+  // Estimate asteroid size from its orbital characteristics
+  const estimateAsteroidSize = (semiMajorAxis, eccentricity, designation) => {
+    // Typical asteroid size estimations based on orbital characteristics
+    // This is a rough approximation based on asteroid belt statistics
+    
+    // Main belt asteroids (2.1 - 3.3 AU): more numerous, generally smaller
+    // Near-Earth asteroids (<1.3 AU): various sizes, but often smaller
+    // Outer asteroids (>3.3 AU): can be larger
+    
+    const au = semiMajorAxis / 149.6; // Convert million km to AU
+    
+    // Size category based on orbital position
+    let typicalDiameter; // in meters
+    
+    if (au < 1.3) {
+      // Near-Earth asteroids - typically 10m to 30km
+      // Most are under 1km
+      typicalDiameter = 500; // 500 meters as typical
+    } else if (au >= 2.0 && au <= 3.5) {
+      // Main belt - highly variable (1m to 940km)
+      // Most are 1-10 km
+      typicalDiameter = 5000; // 5 km as typical
+    } else if (au > 3.5) {
+      // Outer belt and beyond - can be larger
+      typicalDiameter = 50000; // 50 km as typical
+    } else {
+      // Mars crossers and others
+      typicalDiameter = 2000; // 2 km as typical
+    }
+    
+    // Adjust for eccentricity (highly eccentric orbits might indicate different populations)
+    if (eccentricity > 0.4) {
+      typicalDiameter *= 0.5; // Eccentric orbits often indicate smaller objects
+    }
+    
+    return typicalDiameter;
+  };
+
+  // Calculate mass from estimated diameter and composition
+  const calculateMassFromDiameter = (diameter, composition = "Rocky") => {
+    const densities = {
+      Rocky: 2500,    // kg/m³
+      Stony: 2500,
+      Metallic: 7800,
+      Icy: 900,
+      Carbonaceous: 1400,
+      Mixed: 2000,
+    };
+    const density = densities[composition] || 2500;
+    const radius = diameter / 2; // meters
+    const volume = (4/3) * Math.PI * Math.pow(radius, 3); // m³
+    const mass = volume * density; // kg
+    return mass;
+  };
+
   const addCustomObject = () => {
     if (!newObject.name.trim()) {
       alert("Please enter a name for the object");
@@ -878,37 +933,76 @@ const SolarSystem = () => {
   };
 
   function parseFullNasaStringToJson(nasaData) {
-    console.log(nasaData)
   const resultText = nasaData.result || "";
   const parsed = {};
 
-  // ---- Planet Name ----
+  console.log("\n=== PARSING NASA DATA ===");
+  
+  // ---- Planet/Object Name ----
   const nameMatch = resultText.match(/Revised:.*?\s+([A-Za-z]+)\s+\d+/);
   parsed.name = nameMatch ? nameMatch[1] : "Unknown";
 
-  // ---- PHYSICAL / GEOPHYSICAL DATA ----
-  const physMatch = resultText.match(/(?:PHYSICAL DATA|GEOPHYSICAL PROPERTIES).*?\n([\s\S]*?)\*{10}/);
+  // ---- Try multiple patterns for PHYSICAL DATA ----
+  // Pattern 1: Standard format with asterisks
+  let physMatch = resultText.match(/(?:PHYSICAL DATA|GEOPHYSICAL PROPERTIES|SATELLITE PHYSICAL PROPERTIES|PHYSICAL PROPERTIES).*?\n([\s\S]*?)\*{10}/);
+  
+  // Pattern 2: Sometimes physical data appears between "Revised:" and first asterisk line
+  if (!physMatch) {
+    physMatch = resultText.match(/Revised:[\s\S]*?\n([\s\S]*?)\n\*{10}/);
+  }
+  
+  // Pattern 3: Try to find any section with "=" signs before ephemeris data
+  if (!physMatch) {
+    const beforeEphemeris = resultText.split(/\$\$SOE/)[0];
+    const linesWithEquals = beforeEphemeris.split('\n').filter(line => 
+      line.includes('=') && 
+      !line.includes('*****') &&
+      !line.includes('CENTER') &&
+      !line.includes('COMMAND')
+    );
+    if (linesWithEquals.length > 0) {
+      console.log(`Found ${linesWithEquals.length} lines with '=' signs before ephemeris`);
+      physMatch = [null, linesWithEquals.join('\n')];
+    }
+  }
+  
   if (physMatch) {
     const physText = physMatch[1];
     const lines = physText
       .split("\n")
       .map(l => l.trim())
-      .filter(l => l && l.includes("="));
+      .filter(l => l && l.includes("=") && !l.includes('*'));
 
-    parsed.physicalData = {};
-    lines.forEach(line => {
-      const parts = line.split("=");
-      if (parts.length >= 2) {
-        const key = parts[0].trim();
-        let value = parts.slice(1).join("=").trim();
+    console.log(`Parsing ${lines.length} potential physical data lines`);
+    
+    if (lines.length > 0) {
+      parsed.physicalData = {};
+      lines.forEach(line => {
+        const parts = line.split("=");
+        if (parts.length >= 2) {
+          const key = parts[0].trim();
+          let valueStr = parts.slice(1).join("=").trim();
 
-        // Try to convert numbers
-        const numValue = parseFloat(value.replace(/[^\d\.\-e+]/g, ""));
-        value = isNaN(numValue) ? value : numValue;
-
-        parsed.physicalData[key] = value;
-      }
-    });
+          // Extract first number from value (before +- or other text)
+          // Match patterns like: "761.4 +- 2.6" or "1.66 +- 0.05" or "205.34 +- 5.8"
+          const numMatch = valueStr.match(/^([\d.]+(?:e[+-]?\d+)?)/i);
+          if (numMatch) {
+            const numValue = parseFloat(numMatch[1]);
+            if (!isNaN(numValue)) {
+              parsed.physicalData[key] = numValue;
+              console.log(`  Parsed: "${key}" = ${numValue}`);
+            } else {
+              parsed.physicalData[key] = valueStr;
+            }
+          } else {
+            parsed.physicalData[key] = valueStr;
+            console.log(`  Parsed: "${key}" = "${valueStr}" (text)`);
+          }
+        }
+      });
+    }
+  } else {
+    console.log("⚠ No physical data section found in NASA response");
   }
 
   // ---- Orbital / HELIOCENTRIC ORBIT CHARACTERISTICS ----
@@ -959,165 +1053,14 @@ const SolarSystem = () => {
       };
     });
   }
-  // console.log(parsed)
+  
+  console.log("Parsed NASA data:", parsed);
   return parsed;
 }
 
 
-  const fetchNASAHorizonsData = async () => {
-  setIsLoadingNASAData(true);
-  setCalculationMode("Loading NASA Data...");
-
-  try {
-    const planetIDs = {
-      Mercury: 199,
-      Venus: 299,
-      Earth: 399,
-      Mars: 499,
-      Jupiter: 599,
-      Saturn: 699,
-      Uranus: 799,
-      Neptune: 899,
-    };
-
-    // Calculate Julian dates for start and end
-    const today = new Date();
-    const jdNow = dateToJulianDate(today);
-    const jdTomorrow = jdNow + 1;
-
-    const updatedPlanets = await Promise.all(
-      celestialBodies
-        .filter((b) => b.type === "planet")
-        .map(async (planet) => {
-          try {
-            const id = planetIDs[planet.name];
-            if (!id) return planet;
-
-            // Format JD properly
-            const startJD = `'JD ${jdNow}'`;
-            const stopJD = `'JD ${jdTomorrow}'`;
-
-            const params = new URLSearchParams({
-              format: "json",
-              COMMAND: `'${id}'`,
-              EPHEM_TYPE: "VECTORS",
-              CENTER: `'@sun'`,
-              REF_PLANE: `'ECLIPTIC'`,
-              REF_SYSTEM: `'J2000'`,
-              VEC_LABELS: `'YES'`,
-              VEC_DELTA_T: `'NO'`,
-              OUT_UNITS: `'KM-S'`,
-              CSV_FORMAT: `'YES'`,
-              OBJ_DATA: `'YES'`,
-              VEC_TABLE: `'3'`,
-              START_TIME: startJD,
-              STOP_TIME: stopJD,
-              STEP_SIZE: `'1 d'`,
-            });
-
-            const response = await fetchNASAHorizonsAPI(params.toString());
-            console.log(response)
-
-            if (!response.ok) {
-              console.warn(
-                `Horizons API returned ${response.status} for ${planet.name}`
-              );
-              return planet;
-            }
-
-            const fullPlanetJson = await parseFullNasaStringToJson(response);
-            console.log(fullPlanetJson)
-            if (!fullPlanetJson) return planet;
-
-            // planetData now has name, physicalData, ephemeris array
-            const planetData = fullPlanetJson;
-
-            if (
-              planetData &&
-              planetData.ephemeris &&
-              planetData.ephemeris.length > 0
-            ) {
-              // Use the first ephemeris entry for orbital calculations
-              const firstVector = planetData.ephemeris[0];
-
-              const orbitalElements = stateVectorsToOrbitalElements({
-                x: firstVector.X,
-                y: firstVector.Y,
-                z: firstVector.Z,
-                vx: firstVector.VX,
-                vy: firstVector.VY,
-                vz: firstVector.VZ,
-              });
-
-              // Try to extract velocity from NASA physical data
-              let finalVelocity = orbitalElements.velocity;
-              if (planetData.physicalData) {
-                const phys = planetData.physicalData;
-                if (phys["Orbital speed"]) finalVelocity = phys["Orbital speed"];
-                else if (phys["Mean orbital velocity"]) finalVelocity = phys["Mean orbital velocity"];
-                else if (phys["Orbit vel., km/s"]) finalVelocity = phys["Orbit vel., km/s"];
-                else if (phys["Orbital velocity"]) finalVelocity = phys["Orbital velocity"];
-              }
-
-              return {
-                ...planet,
-                name: planetData.name,
-                physicalData: planetData.physicalData,
-                ephemeris: planetData.ephemeris,
-                distanceKm: orbitalElements.semiMajorAxis,
-                eccentricity: orbitalElements.eccentricity,
-                periodDays: orbitalElements.period,
-                velocityKmS: finalVelocity, // Use NASA velocity if available
-                perihelionArg: orbitalElements.argumentOfPeriapsis,
-                distancePixels:
-                  (orbitalElements.semiMajorAxis / 4515.0) * 350 + 30,
-                nasaData: true,
-                nasaState: {
-                  x: firstVector.X / 1e6, // million km
-                  y: firstVector.Y / 1e6,
-                  z: firstVector.Z / 1e6,
-                  vx: firstVector.VX,
-                  vy: firstVector.VY,
-                  vz: firstVector.VZ,
-                },
-                nasaTimestamp: firstVector.calendarDate,
-              };
-            }
-
-            // fallback if ephemeris missing
-            return { ...planet, nasaData: false };
-          } catch (error) {
-            console.error(`Error fetching data for ${planet.name}:`, error);
-            return planet;
-          }
-        })
-    );
-
-    const customObjects = celestialBodies.filter((b) => b.type !== "planet");
-    setCelestialBodies([...updatedPlanets, ...customObjects]);
-    setUseNASAData(true);
-    setNasaDataTimestamp(new Date().toISOString());
-    setCalculationMode("NASA Horizons API");
-  } catch (error) {
-    console.error("Error fetching NASA Horizons data:", error);
-    alert(
-      "Could not fetch NASA data. Using Kepler's Laws calculations instead."
-    );
-    setCalculationMode("Kepler's Laws");
-  } finally {
-    setIsLoadingNASAData(false);
-  }
-};
-
-
-    const [isDragging, setIsDragging] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-
-  // On mount: fetch NASA Horizons data so simulation uses real state vectors by default
-  useEffect(() => {
-    fetchNASAHorizonsData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const addRealAsteroid = async (name, designation) => {
     setIsLoadingNASAData(true);
@@ -1148,6 +1091,12 @@ const SolarSystem = () => {
       const data = await fetchNASAHorizonsAPI(params);
 
       if (data && data.result) {
+        // Log the raw NASA response to see what's available
+        console.log("\n========== RAW NASA RESPONSE ==========");
+        console.log("First 2000 characters of response:");
+        console.log(data.result.substring(0, 2000));
+        console.log("\n========================================\n");
+        
         // Parse full NASA response to get physical data (diameter, mass, etc.)
         const fullData = parseFullNasaStringToJson(data);
         const vectorData = parseHorizonsVectorData(data);
@@ -1161,43 +1110,165 @@ const SolarSystem = () => {
 
           // Extract physical data from NASA response
           let diameter = null; // meters
-          let mass = 1e13; // default fallback mass (kg)
+          let mass = null; // kg
           let composition = "Rocky"; // default
           let nasaVelocity = null; // km/s from NASA data
+          
+          // Data source tracking for debugging
+          let diameterSource = "not found";
+          let massSource = "not found";
+          let velocitySource = "not found";
+
+          console.log("\n=== NASA DATA EXTRACTION FOR:", name, "===");
+          console.log("Designation:", designation);
+          console.log("Full NASA response keys:", Object.keys(fullData || {}));
+          console.log("Physical Data available:", !!fullData?.physicalData);
+          
+          if (fullData?.physicalData) {
+            console.log("\n📋 Available Physical Data from NASA:");
+            console.log("Physical Data keys:", Object.keys(fullData.physicalData));
+            console.log("Physical Data:", fullData.physicalData);
+          } else {
+            console.log("\n⚠ NASA Horizons did NOT provide physical data for this object");
+            console.log("This is common for most asteroids - NASA only has detailed physical");
+            console.log("data for well-studied objects (planets, major moons, some large asteroids)");
+            console.log("\n✓ Available NASA data:");
+            console.log("  - Position vectors (X, Y, Z)");
+            console.log("  - Velocity vectors (VX, VY, VZ)");
+            console.log("  - Orbital elements (calculated from vectors)");
+            console.log("\n📊 Will estimate size/mass from orbital characteristics...");
+          }
 
           if (fullData && fullData.physicalData) {
             const phys = fullData.physicalData;
+            console.log("Available NASA keys:", Object.keys(phys));
+            console.log("All key-value pairs:");
+            for (const key in phys) {
+              console.log(`  "${key}" = ${phys[key]} (type: ${typeof phys[key]})`);
+            }
             
-            // Try different diameter keys NASA uses (NASA provides in km, convert to meters)
-            if (phys["Diameter"]) diameter = phys["Diameter"] * 1000;
-            else if (phys["Mean diameter"]) diameter = phys["Mean diameter"] * 1000;
-            else if (phys["Radius (km)"]) diameter = phys["Radius (km)"] * 2 * 1000;
-            else if (phys["Radius, km"]) diameter = phys["Radius, km"] * 2 * 1000;
-            else if (phys["Mean radius (km)"]) diameter = phys["Mean radius (km)"] * 2 * 1000;
+            // DIAMETER/RADIUS EXTRACTION
+            // NASA format: "Radius (km)" or "Diameter" or "Mean diameter"
+            for (const key in phys) {
+              const lowerKey = key.toLowerCase();
+              const value = phys[key];
+              
+              if (!diameter && typeof value === 'number' && value > 0) {
+                // Check for diameter
+                if (lowerKey.includes('diameter') || lowerKey.includes('diam')) {
+                  diameter = value * 1000; // convert km to meters
+                  diameterSource = `NASA (${key})`;
+                  console.log(`✓ DIAMETER from NASA key "${key}": ${value} km = ${diameter} meters`);
+                  break;
+                }
+                // Check for radius (double it to get diameter)
+                else if (lowerKey.includes('radius') && lowerKey.includes('km')) {
+                  diameter = value * 2 * 1000; // convert radius km to diameter meters
+                  diameterSource = `NASA (${key} × 2)`;
+                  console.log(`✓ DIAMETER from NASA radius "${key}": ${value} km radius × 2 = ${diameter} meters`);
+                  break;
+                }
+              }
+            }
             
-            // Try to get mass
-            if (phys["Mass (10^21 kg)"]) mass = phys["Mass (10^21 kg)"] * 1e21;
-            else if (phys["Mass, kg"]) mass = phys["Mass, kg"];
-            else if (phys["Mass x10^22 (kg)"]) mass = phys["Mass x10^22 (kg)"] * 1e22;
+            // MASS EXTRACTION
+            // NASA format: "GM (km^3/s^2)" - can calculate mass from GM
+            // Or direct mass fields
+            for (const key in phys) {
+              const lowerKey = key.toLowerCase();
+              const value = phys[key];
+              
+              if (!mass && typeof value === 'number' && value > 0) {
+                // Check for GM (Gravitational parameter = G * M)
+                // GM can be in format: "GM (km^3/s^2)" or "GM, km^3 s^-2" etc
+                if (lowerKey.includes('gm')) {
+                  // GM in km^3/s^2, G = 6.67430e-20 km^3/(kg·s^2)
+                  const G = 6.67430e-20; // km^3/(kg·s^2)
+                  mass = value / G;
+                  massSource = `NASA (calculated from ${key})`;
+                  console.log(`✓ MASS from NASA GM "${key}": ${value} km³/s² → ${mass.toExponential(2)} kg`);
+                  break;
+                }
+                // Check for direct mass
+                else if (lowerKey.includes('mass')) {
+                  if (key.includes('10^21') || key.includes('10**21') || key.includes('10^+21')) {
+                    mass = value * 1e21;
+                    massSource = `NASA (${key})`;
+                    console.log(`✓ MASS from NASA "${key}": ${value} × 10²¹ = ${mass.toExponential(2)} kg`);
+                    break;
+                  } else if (key.includes('10^22') || key.includes('10**22') || key.includes('10^+22')) {
+                    mass = value * 1e22;
+                    massSource = `NASA (${key})`;
+                    console.log(`✓ MASS from NASA "${key}": ${value} × 10²² = ${mass.toExponential(2)} kg`);
+                    break;
+                  } else if (key.includes('10^20') || key.includes('10**20') || key.includes('10^+20')) {
+                    mass = value * 1e20;
+                    massSource = `NASA (${key})`;
+                    console.log(`✓ MASS from NASA "${key}": ${value} × 10²⁰ = ${mass.toExponential(2)} kg`);
+                    break;
+                  } else if (key.includes('10^19') || key.includes('10**19') || key.includes('10^+19')) {
+                    mass = value * 1e19;
+                    massSource = `NASA (${key})`;
+                    console.log(`✓ MASS from NASA "${key}": ${value} × 10¹⁹ = ${mass.toExponential(2)} kg`);
+                    break;
+                  } else if (key.includes('10^10') || key.includes('10**10') || key.includes('10^+10')) {
+                    mass = value * 1e10;
+                    massSource = `NASA (${key})`;
+                    console.log(`✓ MASS from NASA "${key}": ${value} × 10¹⁰ = ${mass.toExponential(2)} kg`);
+                    break;
+                  }
+                }
+              }
+            }
             
-            // Try to get velocity from NASA data
-            if (phys["Orbital speed"]) nasaVelocity = phys["Orbital speed"];
-            else if (phys["Mean orbital velocity"]) nasaVelocity = phys["Mean orbital velocity"];
-            else if (phys["Orbit vel., km/s"]) nasaVelocity = phys["Orbit vel., km/s"];
-            else if (phys["Orbital velocity"]) nasaVelocity = phys["Orbital velocity"];
-            
-            // If no mass but we have diameter, calculate mass from diameter
-            if (!phys["Mass (10^21 kg)"] && !phys["Mass, kg"] && diameter) {
-              const density = 2500; // kg/m³ for rocky asteroids
-              const radiusM = diameter / 2; // diameter already in meters
-              const volume = (4/3) * Math.PI * Math.pow(radiusM, 3);
-              mass = volume * density;
+            // VELOCITY EXTRACTION
+            for (const key in phys) {
+              const lowerKey = key.toLowerCase();
+              const value = phys[key];
+              
+              if (!nasaVelocity && typeof value === 'number' && value > 0) {
+                if ((lowerKey.includes('orbital') || lowerKey.includes('orbit')) && 
+                    (lowerKey.includes('speed') || lowerKey.includes('velocity') || lowerKey.includes('vel'))) {
+                  nasaVelocity = value;
+                  velocitySource = `NASA (${key})`;
+                  console.log(`✓ VELOCITY from NASA "${key}": ${nasaVelocity} km/s`);
+                  break;
+                }
+              }
             }
           }
 
-          // If no diameter but we have mass, calculate diameter from mass
-          if (!diameter && mass) {
+          // FALLBACK CALCULATIONS
+          // If we have diameter but no mass, calculate mass from diameter
+          if (diameter && !mass) {
+            mass = calculateMassFromDiameter(diameter, composition);
+            massSource = "Calculated from diameter";
+            console.log(`⚙ MASS calculated from diameter: ${mass.toExponential(2)} kg (using density for ${composition})`);
+          }
+          // If we have mass but no diameter, calculate diameter from mass
+          else if (mass && !diameter) {
             diameter = calculateDiameterFromMass(mass, composition);
+            diameterSource = "Calculated from mass";
+            console.log(`⚙ DIAMETER calculated from mass: ${diameter.toFixed(2)} meters`);
+          }
+          // If we have neither, estimate from orbital characteristics
+          else if (!mass && !diameter) {
+            // Estimate size based on orbital parameters
+            diameter = estimateAsteroidSize(orbitalElements.semiMajorAxis, orbitalElements.eccentricity, designation);
+            diameterSource = "Estimated from orbital characteristics";
+            console.log(`📊 DIAMETER estimated from orbit: ${diameter.toFixed(2)} meters`);
+            console.log(`   (Semi-major axis: ${orbitalElements.semiMajorAxis.toFixed(2)} M km, Eccentricity: ${orbitalElements.eccentricity.toFixed(3)})`);
+            
+            // Calculate mass from estimated diameter
+            mass = calculateMassFromDiameter(diameter, composition);
+            massSource = "Calculated from estimated diameter";
+            console.log(`⚙ MASS calculated from estimated diameter: ${mass.toExponential(2)} kg (using density for ${composition})`);
+          }
+          
+          // Use calculated velocity if NASA didn't provide it
+          if (!nasaVelocity) {
+            velocitySource = "Calculated from orbital elements";
+            console.log(`⚙ VELOCITY will be calculated from state vectors`);
           }
 
           // Use NASA velocity if available, otherwise use calculated velocity from state vectors
@@ -1215,7 +1286,7 @@ const SolarSystem = () => {
             diameter: diameter, // meters
             composition: composition,
             periodDays: period,
-            velocityKmS: finalVelocity, // Use NASA velocity if available, otherwise calculated
+            velocityKmS: finalVelocity,
             distancePixels: distancePixels,
             angle: 0,
             id: Date.now(),
@@ -1230,7 +1301,24 @@ const SolarSystem = () => {
               vz: vectorData.vz,
             },
             nasaTimestamp: vectorData.date,
+            // Debug metadata
+            _debug: {
+              diameterSource,
+              massSource,
+              velocitySource
+            }
           };
+
+          console.log("\n=== FINAL ASTEROID DATA ===");
+          console.log(`Name: ${name}`);
+          console.log(`Diameter: ${diameter.toFixed(2)} meters [${diameterSource}]`);
+          console.log(`Mass: ${mass.toExponential(2)} kg [${massSource}]`);
+          console.log(`Velocity: ${finalVelocity.toFixed(2)} km/s [${velocitySource}]`);
+          console.log(`Composition: ${composition} (default)`);
+          console.log(`Semi-major Axis: ${orbitalElements.semiMajorAxis.toFixed(2)} M km`);
+          console.log(`Eccentricity: ${orbitalElements.eccentricity.toFixed(4)}`);
+          console.log(`Period: ${period.toFixed(2)} days`);
+          console.log("===========================\n");
 
           setCelestialBodies((prev) => [...prev, asteroid]);
         } else {
@@ -2213,11 +2301,11 @@ const SolarSystem = () => {
               <h3 className="text-white font-bold mb-2">Object Details</h3>
               <div className="grid grid-cols-2 gap-2 text-sm text-gray-300">
                 <div>
-                  <strong>Type:</strong> {selectedObjectForAnalysis.type}
+                  <strong>Type:</strong> {selectedObjectForAnalysis.type || "Unknown"}
                 </div>
                 <div>
                   <strong>Mass:</strong>{" "}
-                  {selectedObjectForAnalysis.mass.toExponential(2)} kg
+                  {selectedObjectForAnalysis.mass ? selectedObjectForAnalysis.mass.toExponential(2) : "N/A"} kg
                 </div>
                 {selectedObjectForAnalysis.diameter && (
                   <div>
@@ -2227,20 +2315,28 @@ const SolarSystem = () => {
                 )}
                 <div>
                   <strong>Composition:</strong>{" "}
-                  {selectedObjectForAnalysis.composition}
+                  {selectedObjectForAnalysis.composition || "Unknown"}
                 </div>
                 <div>
                   <strong>Semi-major Axis:</strong>{" "}
-                  {selectedObjectForAnalysis.distanceKm} M km
+                  {selectedObjectForAnalysis.distanceKm ? selectedObjectForAnalysis.distanceKm.toFixed(1) : "N/A"} M km
                 </div>
                 <div>
                   <strong>Eccentricity:</strong>{" "}
-                  {selectedObjectForAnalysis.eccentricity}
+                  {selectedObjectForAnalysis.eccentricity ? selectedObjectForAnalysis.eccentricity.toFixed(3) : "N/A"}
                 </div>
-                <div>
-                  <strong>Orbital Period:</strong>{" "}
-                  {selectedObjectForAnalysis.periodDays.toFixed(1)} days
-                </div>
+                {selectedObjectForAnalysis.periodDays && (
+                  <div>
+                    <strong>Orbital Period:</strong>{" "}
+                    {selectedObjectForAnalysis.periodDays.toFixed(1)} days
+                  </div>
+                )}
+                {selectedObjectForAnalysis.velocityKmS && (
+                  <div>
+                    <strong>Orbital Velocity:</strong>{" "}
+                    {selectedObjectForAnalysis.velocityKmS.toFixed(2)} km/s
+                  </div>
+                )}
               </div>
             </div>
 
