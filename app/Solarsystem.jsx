@@ -156,7 +156,7 @@ const SolarSystem = () => {
     eccentricity: 0.1,
     inclination: 0,
     mass: 1e15,
-    diameter: null, // km
+    diameter: null, // meters
     composition: "Rocky",
     perihelionArg: 0,
   });
@@ -188,7 +188,7 @@ const SolarSystem = () => {
     const density = densities[composition] || 2500;
     const volume = mass / density; // m³
     const radius = Math.pow((3 * volume) / (4 * Math.PI), 1/3); // meters
-    const diameter = (2 * radius) / 1000; // convert to km
+    const diameter = 2 * radius; // diameter in meters
     return diameter;
   };
 
@@ -1160,7 +1160,7 @@ const SolarSystem = () => {
             (orbitalElements.semiMajorAxis / 4515.0) * 350 + 30;
 
           // Extract physical data from NASA response
-          let diameter = null; // km
+          let diameter = null; // meters
           let mass = 1e13; // default fallback mass (kg)
           let composition = "Rocky"; // default
           let nasaVelocity = null; // km/s from NASA data
@@ -1168,12 +1168,12 @@ const SolarSystem = () => {
           if (fullData && fullData.physicalData) {
             const phys = fullData.physicalData;
             
-            // Try different diameter keys NASA uses
-            if (phys["Diameter"]) diameter = phys["Diameter"];
-            else if (phys["Mean diameter"]) diameter = phys["Mean diameter"];
-            else if (phys["Radius (km)"]) diameter = phys["Radius (km)"] * 2;
-            else if (phys["Radius, km"]) diameter = phys["Radius, km"] * 2;
-            else if (phys["Mean radius (km)"]) diameter = phys["Mean radius (km)"] * 2;
+            // Try different diameter keys NASA uses (NASA provides in km, convert to meters)
+            if (phys["Diameter"]) diameter = phys["Diameter"] * 1000;
+            else if (phys["Mean diameter"]) diameter = phys["Mean diameter"] * 1000;
+            else if (phys["Radius (km)"]) diameter = phys["Radius (km)"] * 2 * 1000;
+            else if (phys["Radius, km"]) diameter = phys["Radius, km"] * 2 * 1000;
+            else if (phys["Mean radius (km)"]) diameter = phys["Mean radius (km)"] * 2 * 1000;
             
             // Try to get mass
             if (phys["Mass (10^21 kg)"]) mass = phys["Mass (10^21 kg)"] * 1e21;
@@ -1189,10 +1189,15 @@ const SolarSystem = () => {
             // If no mass but we have diameter, calculate mass from diameter
             if (!phys["Mass (10^21 kg)"] && !phys["Mass, kg"] && diameter) {
               const density = 2500; // kg/m³ for rocky asteroids
-              const radiusM = (diameter * 1000) / 2; // convert km to m
+              const radiusM = diameter / 2; // diameter already in meters
               const volume = (4/3) * Math.PI * Math.pow(radiusM, 3);
               mass = volume * density;
             }
+          }
+
+          // If no diameter but we have mass, calculate diameter from mass
+          if (!diameter && mass) {
+            diameter = calculateDiameterFromMass(mass, composition);
           }
 
           // Use NASA velocity if available, otherwise use calculated velocity from state vectors
@@ -1207,7 +1212,7 @@ const SolarSystem = () => {
             eccentricity: orbitalElements.eccentricity,
             perihelionArg: orbitalElements.argumentOfPeriapsis,
             mass: mass,
-            diameter: diameter, // km
+            diameter: diameter, // meters
             composition: composition,
             periodDays: period,
             velocityKmS: finalVelocity, // Use NASA velocity if available, otherwise calculated
@@ -1228,18 +1233,6 @@ const SolarSystem = () => {
           };
 
           setCelestialBodies((prev) => [...prev, asteroid]);
-          
-          const diameterText = diameter ? `\n• Diameter: ${diameter.toFixed(2)} km` : "";
-          const massText = mass ? `\n• Mass: ${mass.toExponential(2)} kg` : "";
-          const velocityText = `\n• Orbital Velocity: ${finalVelocity.toFixed(2)} km/s${nasaVelocity ? ' (NASA)' : ' (calculated)'}`;
-          
-          alert(
-            `Successfully added ${name}!${diameterText}${massText}${velocityText}\n\nOrbital Details:\n• Distance: ${orbitalElements.semiMajorAxis.toFixed(
-              1
-            )} M km\n• Period: ${period.toFixed(
-              1
-            )} days\n• Eccentricity: ${orbitalElements.eccentricity.toFixed(3)}`
-          );
         } else {
           alert(`Could not parse orbital data for ${name}.`);
         }
@@ -1826,7 +1819,7 @@ const SolarSystem = () => {
 
             <div>
               <label className="text-gray-300 text-sm block mb-1">
-                Diameter (km, optional)
+                Diameter (meters, optional)
               </label>
               <input
                 type="number"
@@ -1838,7 +1831,7 @@ const SolarSystem = () => {
                   })
                 }
                 className="w-full px-3 py-2 bg-gray-700 text-white rounded"
-                step="0.1"
+                step="1"
                 placeholder="Auto-calculated from mass"
               />
               <span className="text-xs text-gray-400">
@@ -1942,7 +1935,7 @@ const SolarSystem = () => {
             {!newObject.diameter && newObject.mass && (
               <p className="text-sm text-gray-300 mt-1">
                 <strong>Estimated Diameter:</strong>{" "}
-                {calculateDiameterFromMass(newObject.mass, newObject.composition).toFixed(3)} km
+                {calculateDiameterFromMass(newObject.mass, newObject.composition).toFixed(2)} meters
                 <span className="text-xs text-gray-400 ml-2">(from mass & composition)</span>
               </p>
             )}
@@ -1976,7 +1969,7 @@ const SolarSystem = () => {
                     distanceKm: 2678,
                     eccentricity: 0.967,
                     mass: 2.2e14,
-                    diameter: 11, // km (approximate)
+                    diameter: 11000, // meters (11 km)
                     composition: "Icy",
                     perihelionArg: 111,
                     inclination: 0,
@@ -1996,7 +1989,7 @@ const SolarSystem = () => {
                     distanceKm: 414,
                     eccentricity: 0.076,
                     mass: 9.39e20,
-                    diameter: 939.4, // km
+                    diameter: 939400, // meters (939.4 km)
                     composition: "Rocky",
                     perihelionArg: 73,
                     inclination: 0,
@@ -2016,7 +2009,7 @@ const SolarSystem = () => {
                     distanceKm: 5906,
                     eccentricity: 0.244,
                     mass: 1.31e22,
-                    diameter: 2376.6, // km
+                    diameter: 2376600, // meters (2376.6 km)
                     composition: "Icy",
                     perihelionArg: 113,
                     inclination: 0,
@@ -2036,7 +2029,7 @@ const SolarSystem = () => {
                     distanceKm: 168,
                     eccentricity: 0.204,
                     mass: 7.3e10,
-                    diameter: 0.492, // km
+                    diameter: 492, // meters (0.492 km)
                     composition: "Carbonaceous",
                     perihelionArg: 66,
                     inclination: 0,
@@ -2056,7 +2049,7 @@ const SolarSystem = () => {
                     distanceKm: 149.8,
                     eccentricity: 0.015,
                     mass: 5e15,
-                    diameter: 1.38, // km (calculated from mass)
+                    diameter: 1380, // meters (1.38 km)
                     composition: "Metallic",
                     perihelionArg: 102,
                     inclination: 0,
@@ -2213,46 +2206,7 @@ const SolarSystem = () => {
                 </div>
               </div>
 
-              <div className="bg-gray-700 p-4 rounded">
-                <h3 className="text-white font-bold mb-2">Impact Energy</h3>
-                <p className="text-gray-300 text-sm mb-2">
-                  <strong>Impact Velocity:</strong>{" "}
-                  {impactData.impactVelocity.toFixed(1)} km/s
-                </p>
-                <p className="text-gray-300 text-sm mb-2">
-                  <strong>Kinetic Energy:</strong>{" "}
-                  {impactData.kineticEnergy.toExponential(2)} Joules
-                </p>
-                <p className="text-gray-300 text-sm">
-                  <strong>≈</strong> {impactData.energyMegatons.toFixed(2)}{" "}
-                  Megatons TNT
-                </p>
-                <p className="text-gray-400 text-xs mt-2 italic">
-                  (1 Megaton = 1 million tons of TNT)
-                </p>
-              </div>
 
-              <div className="bg-gray-700 p-4 rounded">
-                <h3 className="text-white font-bold mb-2">Crater Dimensions</h3>
-                <p className="text-gray-300 text-sm mb-2">
-                  <strong>Crater Diameter:</strong>{" "}
-                  {(impactData.craterDiameter / 1000).toFixed(2)} km
-                </p>
-                <p className="text-gray-300 text-sm mb-2">
-                  <strong>Crater Depth:</strong>{" "}
-                  {(impactData.craterDepth / 1000).toFixed(2)} km
-                </p>
-                {impactData.centralPeakHeight > 0 && (
-                  <p className="text-gray-300 text-sm mb-2">
-                    <strong>Central Peak:</strong>{" "}
-                    {(impactData.centralPeakHeight / 1000).toFixed(2)} km high
-                  </p>
-                )}
-                <p className="text-gray-300 text-sm">
-                  <strong>Ejecta Radius:</strong>{" "}
-                  {(impactData.craterZones.ejectaBlanket / 1000).toFixed(2)} km
-                </p>
-              </div>
             </div>
 
             <div className="bg-gray-700 p-4 rounded mb-4">
@@ -2268,7 +2222,7 @@ const SolarSystem = () => {
                 {selectedObjectForAnalysis.diameter && (
                   <div>
                     <strong>Diameter:</strong>{" "}
-                    {selectedObjectForAnalysis.diameter.toFixed(2)} km
+                    {selectedObjectForAnalysis.diameter.toFixed(2)} meters
                   </div>
                 )}
                 <div>
@@ -2348,11 +2302,11 @@ const SolarSystem = () => {
                 onClick={() => {
                   // Get exact values from impact analysis report
                   const impactVelocity = impactData.impactVelocity; // km/s from report
-                  const diameter = selectedObjectForAnalysis.diameter || 'unknown'; // km
-                  const composition = selectedObjectForAnalysis.composition || 'Rocky';
+                  const diameter = selectedObjectForAnalysis.diameter || 'unknown'; // meters
+                  const composition = (selectedObjectForAnalysis.composition || 'Rocky').toLowerCase();
                   
                   // Construct API URL with parameters
-                  const apiUrl = `https://api.example.com/test?velocity=${impactVelocity}&diameter=${diameter}&composition=${composition}`;
+                  const apiUrl = `https://meteor-impact-cal.vercel.app/?velocity=${impactVelocity}&diameter=${diameter}&composition=${composition}`;
                   
                   // Open in new tab
                   window.open(apiUrl, '_blank');
