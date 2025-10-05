@@ -1,0 +1,26 @@
+API VERSION: 1.2
+API SOURCE: NASA/JPL Horizons API
+
+*******************************************************************************
+JPL/HORIZONS                      (2019 OK)                2025-Oct-04 22:35:49
+Rec #:50403895 (+COV) Soln.date: 2021-Apr-15_21:30:16     # obs: 53 (2017-2019)
+ 
+IAU76/J2000 helio. ecliptic osc. elements (au, days, deg., period=Julian yrs):
+ 
+  EPOCH=  2458351.5 ! 2018-Aug-21.00 (TDB)         Residual RMS= .44899
+   EC= .7621374413480156   QR= .4634964657880724   TP= 2458736.584366099
+   OM= 302.5737481999156   W=  103.9032772744923   IN= 1.396235136251015
+   A= 1.948589422458084    MA= 220.4661909273663   ADIST= 3.433682379128097
+   PER= 2.72012            N= .362346076           ANGMOM= .015546211
+   DAN= .99985             DDN= .69033             L= 46.4809944
+   B= 1.3553215            MOID= .00045315         TP= 2019-Sep-10.0843660990
+ 
+Asteroid physical parameters (km, seconds, rotational period in hours):
+   GM= n.a.                RAD= n.a.               ROTPER= n.a.
+   H= 23.3                 G= .150                 B-V= n.a.
+                           ALBEDO= n.a.            STYP= n.a.
+
+ASTEROID comments: 
+1: soln ref.= JPL#7, OCC=1           radar( 2 delay, 1 Dop.)
+2: source=ORB
+*******************************************************************************

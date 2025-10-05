@@ -1,0 +1,26 @@
+API VERSION: 1.2
+API SOURCE: NASA/JPL Horizons API
+
+*******************************************************************************
+JPL/HORIZONS                      (2023 DW)                2025-Oct-04 22:35:53
+Rec #:50554404 (+COV) Soln.date: 2023-Mar-20_06:45:27      # obs: 123 (21 days)
+ 
+IAU76/J2000 helio. ecliptic osc. elements (au, days, deg., period=Julian yrs):
+ 
+  EPOCH=  2460018.5 ! 2023-Mar-15.00 (TDB)         Residual RMS= .1268
+   EC= .3962462594346855   QR= .4950059982116437   TP= 2459910.0639474457
+   OM= 326.1350164594195   W=  40.45240976823482   IN= 5.805311305735086
+   A= .819880631709467     MA= 143.9633130842966   ADIST= 1.14475526520729
+   PER= .74239             N= 1.327633289          ANGMOM= .014301042
+   DAN= .53103             DDN= .98951             L= 6.4420345
+   B= 3.7628431            MOID= .00058145         TP= 2022-Nov-26.5639474457
+ 
+Asteroid physical parameters (km, seconds, rotational period in hours):
+   GM= n.a.                RAD= n.a.               ROTPER= n.a.
+   H= 24.33                G= .150                 B-V= n.a.
+                           ALBEDO= n.a.            STYP= n.a.
+
+ASTEROID comments: 
+1: soln ref.= JPL#17, OCC=6
+2: source=ORB
+*******************************************************************************

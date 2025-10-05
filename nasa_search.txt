@@ -1,0 +1,26 @@
+API VERSION: 1.2
+API SOURCE: NASA/JPL Horizons API
+
+*******************************************************************************
+JPL/HORIZONS                2025 Nortia (1953 LG)          2025-Oct-04 22:33:58
+Rec #:    2025 (+COV) Soln.date: 2025-Sep-17_02:46:55   # obs: 5355 (1935-2025)
+ 
+IAU76/J2000 helio. ecliptic osc. elements (au, days, deg., period=Julian yrs):
+ 
+  EPOCH=  2458271.5 ! 2018-Jun-02.00 (TDB)         Residual RMS= .24807
+   EC= .1121599191564384   QR= 2.80983339205175    TP= 2457248.2890915042
+   OM= 329.0439034992855   W=  310.0271323433045   IN= 7.020983302960371
+   A= 3.16479673837438     MA= 179.122648435425    ADIST= 3.519760084697011
+   PER= 5.63024            N= .175059362           ANGMOM= .030409225
+   DAN= 2.91473            DDN= 3.36793            L= 279.2835585
+   B= -5.3706641           MOID= 1.79989004        TP= 2015-Aug-13.7890915042
+ 
+Asteroid physical parameters (km, seconds, rotational period in hours):
+   GM= n.a.                RAD= 21.3845            ROTPER= 5.692
+   H= 10.79                G= .150                 B-V= n.a.
+                           ALBEDO= .039            STYP= n.a.
+
+ASTEROID comments: 
+1: soln ref.= JPL#73, OCC=0
+2: source=ORB
+*******************************************************************************

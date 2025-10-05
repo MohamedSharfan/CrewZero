@@ -1132,11 +1132,11 @@ const SolarSystem = () => {
             console.log("\n⚠ NASA Horizons did NOT provide physical data for this object");
             console.log("This is common for most asteroids - NASA only has detailed physical");
             console.log("data for well-studied objects (planets, major moons, some large asteroids)");
-            console.log("\n✓ Available NASA data:");
+            console.log("\n[NASA] Available NASA data:");
             console.log("  - Position vectors (X, Y, Z)");
             console.log("  - Velocity vectors (VX, VY, VZ)");
             console.log("  - Orbital elements (calculated from vectors)");
-            console.log("\n📊 Will estimate size/mass from orbital characteristics...");
+            console.log("\n[ESTIMATE] Will estimate size/mass from orbital characteristics...");
           }
 
           if (fullData && fullData.physicalData) {
@@ -1158,14 +1158,14 @@ const SolarSystem = () => {
                 if (lowerKey.includes('diameter') || lowerKey.includes('diam')) {
                   diameter = value * 1000; // convert km to meters
                   diameterSource = `NASA (${key})`;
-                  console.log(`✓ DIAMETER from NASA key "${key}": ${value} km = ${diameter} meters`);
+                  console.log(`[NASA] DIAMETER from NASA key "${key}": ${value} km = ${diameter} meters`);
                   break;
                 }
                 // Check for radius (double it to get diameter)
                 else if (lowerKey.includes('radius') && lowerKey.includes('km')) {
                   diameter = value * 2 * 1000; // convert radius km to diameter meters
                   diameterSource = `NASA (${key} × 2)`;
-                  console.log(`✓ DIAMETER from NASA radius "${key}": ${value} km radius × 2 = ${diameter} meters`);
+                  console.log(`[NASA] DIAMETER from NASA radius "${key}": ${value} km radius × 2 = ${diameter} meters`);
                   break;
                 }
               }
@@ -1186,7 +1186,7 @@ const SolarSystem = () => {
                   const G = 6.67430e-20; // km^3/(kg·s^2)
                   mass = value / G;
                   massSource = `NASA (calculated from ${key})`;
-                  console.log(`✓ MASS from NASA GM "${key}": ${value} km³/s² → ${mass.toExponential(2)} kg`);
+                  console.log(`[NASA] MASS from NASA GM "${key}": ${value} km³/s² → ${mass.toExponential(2)} kg`);
                   break;
                 }
                 // Check for direct mass
@@ -1194,27 +1194,27 @@ const SolarSystem = () => {
                   if (key.includes('10^21') || key.includes('10**21') || key.includes('10^+21')) {
                     mass = value * 1e21;
                     massSource = `NASA (${key})`;
-                    console.log(`✓ MASS from NASA "${key}": ${value} × 10²¹ = ${mass.toExponential(2)} kg`);
+                    console.log(`[NASA] MASS from NASA "${key}": ${value} × 10²¹ = ${mass.toExponential(2)} kg`);
                     break;
                   } else if (key.includes('10^22') || key.includes('10**22') || key.includes('10^+22')) {
                     mass = value * 1e22;
                     massSource = `NASA (${key})`;
-                    console.log(`✓ MASS from NASA "${key}": ${value} × 10²² = ${mass.toExponential(2)} kg`);
+                    console.log(`[NASA] MASS from NASA "${key}": ${value} × 10²² = ${mass.toExponential(2)} kg`);
                     break;
                   } else if (key.includes('10^20') || key.includes('10**20') || key.includes('10^+20')) {
                     mass = value * 1e20;
                     massSource = `NASA (${key})`;
-                    console.log(`✓ MASS from NASA "${key}": ${value} × 10²⁰ = ${mass.toExponential(2)} kg`);
+                    console.log(`[NASA] MASS from NASA "${key}": ${value} × 10²⁰ = ${mass.toExponential(2)} kg`);
                     break;
                   } else if (key.includes('10^19') || key.includes('10**19') || key.includes('10^+19')) {
                     mass = value * 1e19;
                     massSource = `NASA (${key})`;
-                    console.log(`✓ MASS from NASA "${key}": ${value} × 10¹⁹ = ${mass.toExponential(2)} kg`);
+                    console.log(`[NASA] MASS from NASA "${key}": ${value} × 10¹⁹ = ${mass.toExponential(2)} kg`);
                     break;
                   } else if (key.includes('10^10') || key.includes('10**10') || key.includes('10^+10')) {
                     mass = value * 1e10;
                     massSource = `NASA (${key})`;
-                    console.log(`✓ MASS from NASA "${key}": ${value} × 10¹⁰ = ${mass.toExponential(2)} kg`);
+                    console.log(`[NASA] MASS from NASA "${key}": ${value} × 10¹⁰ = ${mass.toExponential(2)} kg`);
                     break;
                   }
                 }
@@ -1231,7 +1231,7 @@ const SolarSystem = () => {
                     (lowerKey.includes('speed') || lowerKey.includes('velocity') || lowerKey.includes('vel'))) {
                   nasaVelocity = value;
                   velocitySource = `NASA (${key})`;
-                  console.log(`✓ VELOCITY from NASA "${key}": ${nasaVelocity} km/s`);
+                  console.log(`[NASA] VELOCITY from NASA "${key}": ${nasaVelocity} km/s`);
                   break;
                 }
               }
@@ -1256,7 +1256,7 @@ const SolarSystem = () => {
             // Estimate size based on orbital parameters
             diameter = estimateAsteroidSize(orbitalElements.semiMajorAxis, orbitalElements.eccentricity, designation);
             diameterSource = "Estimated from orbital characteristics";
-            console.log(`📊 DIAMETER estimated from orbit: ${diameter.toFixed(2)} meters`);
+            console.log(`[ESTIMATE] DIAMETER estimated from orbit: ${diameter.toFixed(2)} meters`);
             console.log(`   (Semi-major axis: ${orbitalElements.semiMajorAxis.toFixed(2)} M km, Eccentricity: ${orbitalElements.eccentricity.toFixed(3)})`);
             
             // Calculate mass from estimated diameter
@@ -1463,9 +1463,9 @@ const SolarSystem = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#191928] p-4">
       <div className="mb-4 text-center">
-        <h1 className="text-3xl font-bold text-white mb-2">
+        <h1 className="text-3xl font-bold text-gray-200 mb-2">
           NASA Accurate Solar System
         </h1>
         <p className="text-gray-300 text-sm">
@@ -1473,9 +1473,9 @@ const SolarSystem = () => {
         </p>
 
         <div className="mt-3 flex gap-4 justify-center items-center flex-wrap">
-          <div className="bg-blue-900 bg-opacity-40 px-4 py-2 rounded-lg border border-blue-500">
-            <p className="text-blue-200 text-xs">Simulation Date</p>
-            <p className="text-white text-sm font-bold">
+          <div className="bg-[#1e1e30] px-4 py-2 rounded-lg">
+            <p className="text-gray-400 text-xs">Simulation Date</p>
+            <p className="text-gray-200 text-sm font-bold">
               {currentSimulationDate.toLocaleDateString("en-US", {
                 weekday: "short",
                 year: "numeric",
@@ -1483,7 +1483,7 @@ const SolarSystem = () => {
                 day: "numeric",
               })}
             </p>
-            <p className="text-blue-300 text-xs">
+            <p className="text-gray-300 text-xs">
               {currentSimulationDate.toLocaleTimeString("en-US", {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -1491,14 +1491,10 @@ const SolarSystem = () => {
             </p>
           </div>
 
-          <div
-            className={`px-4 py-2 rounded-lg border bg-purple-900 bg-opacity-40 border-purple-500`}
-          >
-            <p className="text-purple-200 text-xs">Calculation Mode</p>
-            <p className="text-sm font-bold text-purple-300">
-              {calculationMode}
-            </p>
-            <p className="text-purple-400 text-xs mt-1">
+          <div className={`px-4 py-2 rounded-lg bg-[#1e1e30]`}>
+            <p className="text-gray-400 text-xs">Calculation Mode</p>
+            <p className="text-sm font-bold text-gray-200">{calculationMode}</p>
+            <p className="text-gray-400 text-xs mt-1">
               Orbital mechanics from NASA fact sheets
             </p>
           </div>
@@ -1513,7 +1509,7 @@ const SolarSystem = () => {
         ref={canvasRef}
         width={800}
         height={800}
-        className="border-2 border-gray-700 rounded-lg shadow-2xl bg-black cursor-move"
+        className=" rounded-lg shadow-2xl bg-black cursor-move"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -1523,35 +1519,35 @@ const SolarSystem = () => {
       <div className="flex flex-wrap gap-3 items-center justify-center mt-6 mb-4">
         <button
           onClick={() => setIsPaused(!isPaused)}
-          className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+          className="px-5 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded-lg font-semibold transition-colors"
         >
-          {isPaused ? "▶ Resume" : "⏸ Pause"}
+          {isPaused ? "Resume" : "Pause"}
         </button>
 
         <button
           onClick={resetSimulation}
-          className="px-5 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors"
+          className="px-5 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded-lg font-semibold transition-colors"
         >
           Reset Time
         </button>
 
         <button
           onClick={syncToNow}
-          className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors"
+          className="px-5 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded-lg font-semibold transition-colors"
         >
-          🔄 Sync Now
+          Sync Now
         </button>
 
         <button
           onClick={() => setShowInfo(!showInfo)}
-          className="px-5 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors"
+          className="px-5 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded-lg font-semibold transition-colors"
         >
           {showInfo ? "Hide Info" : "Show Info"}
         </button>
 
         <button
           onClick={() => setShowAddObject(!showAddObject)}
-          className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors"
+          className="px-5 py-2 bg-green-600 hover:bg-green-700 text-gray-200 rounded-lg font-semibold transition-colors"
         >
           Add Custom Object
         </button>
@@ -1559,153 +1555,15 @@ const SolarSystem = () => {
         {celestialBodies.filter((b) => b.type !== "planet").length > 0 && (
           <button
             onClick={removeAllCustomObjects}
-            className="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition-colors"
+            className="px-5 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded-lg font-semibold transition-colors"
           >
             Clear All Custom
           </button>
         )}
       </div>
 
-      <div className="mb-4 max-w-4xl mx-auto bg-gray-800 p-4 rounded-lg">
-        <h3 className="text-white font-bold mb-3 text-center">
-          Add Real Asteroids from NASA Database
-        </h3>
-        <div className="flex gap-2 flex-wrap justify-center">
-          <button
-            onClick={() => addRealAsteroid("Apophis", "99942")}
-            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Apophis")}
-            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
-          >
-            Apophis (99942)
-          </button>
-
-          <button
-            onClick={() => addRealAsteroid("Eros", "433")}
-            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Eros")}
-            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
-          >
-            Eros (433)
-          </button>
-
-          <button
-            onClick={() => addRealAsteroid("Bennu", "101955")}
-            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Bennu")}
-            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
-          >
-            Bennu (101955)
-          </button>
-
-          <button
-            onClick={() => addRealAsteroid("Ryugu", "162173")}
-            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Ryugu")}
-            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
-          >
-            Ryugu (162173)
-          </button>
-
-          <button
-            onClick={() => addRealAsteroid("Vesta", "4")}
-            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Vesta")}
-            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
-          >
-            Vesta (4)
-          </button>
-
-          {/* More important/main-belt asteroids */}
-          <button
-            onClick={() => addRealAsteroid("Ceres", "1")}
-            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Ceres")}
-            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
-          >
-            Ceres (1)
-          </button>
-
-          <button
-            onClick={() => addRealAsteroid("Pallas", "2")}
-            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Pallas")}
-            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
-          >
-            Pallas (2)
-          </button>
-
-          <button
-            onClick={() => addRealAsteroid("Juno", "3")}
-            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Juno")}
-            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
-          >
-            Juno (3)
-          </button>
-
-          <button
-            onClick={() => addRealAsteroid("Hygiea", "10")}
-            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Hygiea")}
-            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
-          >
-            Hygiea (10)
-          </button>
-
-          <button
-            onClick={() => addRealAsteroid("Interamnia", "704")}
-            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Interamnia")}
-            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
-          >
-            Interamnia (704)
-          </button>
-
-          <button
-            onClick={() => addRealAsteroid("Itokawa", "25143")}
-            disabled={isLoadingNASAData || celestialBodies.some((b) => b.name === "Itokawa")}
-            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold text-sm disabled:opacity-50"
-          >
-            Itokawa (25143)
-          </button>
-        </div>
-        <p className="text-gray-400 text-xs text-center mt-2 italic">
-          Real asteroids fetched from NASA Horizons with actual orbital
-          parameters
-        </p>
-
-        <div className="mt-3 flex items-center justify-center gap-2">
-          <input
-            type="text"
-            placeholder="Designation (e.g. 99942 or 2025 AB)"
-            value={manualDesignation}
-            onChange={(e) => setManualDesignation(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleAddByDesignation();
-              }
-            }}
-            className="px-3 py-2 bg-gray-700 text-white rounded w-56"
-          />
-          <input
-            type="text"
-            placeholder="Optional display name"
-            value={manualName}
-            onChange={(e) => setManualName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleAddByDesignation();
-              }
-            }}
-            className="px-3 py-2 bg-gray-700 text-white rounded w-44"
-          />
-          <button
-            onClick={() => handleAddByDesignation()}
-            disabled={isLoadingNASAData || !manualDesignation.trim()}
-            className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded font-semibold text-sm disabled:opacity-50"
-          >
-            Add
-          </button>
-        </div>
-        <p className="text-yellow-400 text-xs text-center mt-1">
-          If asteroids don't appear, check browser console for CORS errors. NASA
-          API may require server proxy.
-        </p>
-      </div>
-
       <div className="mt-4 flex items-center gap-3">
-        <label className="text-white font-semibold">Time Speed:</label>
+        <label className="text-gray-200 font-semibold">Time Speed:</label>
         <input
           type="range"
           min="0"
@@ -1715,7 +1573,7 @@ const SolarSystem = () => {
           onChange={(e) => setSpeed(Math.pow(10, parseFloat(e.target.value)))}
           className="w-48"
         />
-        <span className="text-white w-32 text-center text-sm">
+        <span className="text-gray-200 w-32 text-center text-sm">
           {speed === 1
             ? "Real-time"
             : speed < 86400
@@ -1727,47 +1585,47 @@ const SolarSystem = () => {
       <div className="mt-2 flex gap-2 flex-wrap justify-center">
         <button
           onClick={() => setSpeed(1)}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs"
+          className="px-3 py-1 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded text-xs"
         >
           Real-time
         </button>
         <button
           onClick={() => setSpeed(3600)}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs"
+          className="px-3 py-1 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded text-xs"
         >
           1 hour/sec
         </button>
         <button
           onClick={() => setSpeed(86400)}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs"
+          className="px-3 py-1 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded text-xs"
         >
           1 day/sec
         </button>
         <button
           onClick={() => setSpeed(604800)}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs"
+          className="px-3 py-1 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded text-xs"
         >
           1 week/sec
         </button>
         <button
           onClick={() => setSpeed(2592000)}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs"
+          className="px-3 py-1 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded text-xs"
         >
           1 month/sec
         </button>
         <button
           onClick={() => setSpeed(31536000)}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs"
+          className="px-3 py-1 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded text-xs"
         >
           1 year/sec
         </button>
       </div>
 
       <div className="mt-4 flex items-center gap-3">
-        <label className="text-white font-semibold">Zoom:</label>
+        <label className="text-gray-200 font-semibold">Zoom:</label>
         <button
           onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded"
+          className="px-3 py-1 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded"
         >
           −
         </button>
@@ -1782,11 +1640,11 @@ const SolarSystem = () => {
         />
         <button
           onClick={() => setZoom(Math.min(5, zoom + 0.25))}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded"
+          className="px-3 py-1 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded"
         >
           +
         </button>
-        <span className="text-white w-16 text-center text-sm">
+        <span className="text-gray-200 w-16 text-center text-sm">
           {zoom.toFixed(1)}x
         </span>
         <button
@@ -1795,15 +1653,210 @@ const SolarSystem = () => {
             setPanX(0);
             setPanY(0);
           }}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs"
+          className="px-3 py-1 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded text-xs"
         >
           Reset View
         </button>
       </div>
+      <div className="mb-4 max-w-4xl mx-auto bg-[#1e1e30] p-4 rounded-lg">
+        <h3 className="text-gray-200 font-bold mb-3 text-center">
+          Add Real Asteroids from NASA Database
+        </h3>
+        <div className="flex gap-2 flex-wrap justify-center">
+          <button
+            onClick={() => addRealAsteroid("Apophis", "99942")}
+            disabled={
+              isLoadingNASAData ||
+              celestialBodies.some((b) => b.name === "Apophis")
+            }
+            className="px-4 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Apophis (99942)
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("Eros", "433")}
+            disabled={
+              isLoadingNASAData ||
+              celestialBodies.some((b) => b.name === "Eros")
+            }
+            className="px-4 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Eros (433)
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("Bennu", "101955")}
+            disabled={
+              isLoadingNASAData ||
+              celestialBodies.some((b) => b.name === "Bennu")
+            }
+            className="px-4 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Bennu (101955)
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("Ryugu", "162173")}
+            disabled={
+              isLoadingNASAData ||
+              celestialBodies.some((b) => b.name === "Ryugu")
+            }
+            className="px-4 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Ryugu (162173)
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("Vesta", "4")}
+            disabled={
+              isLoadingNASAData ||
+              celestialBodies.some((b) => b.name === "Vesta")
+            }
+            className="px-4 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Vesta (4)
+          </button>
+
+          {/* More important/main-belt asteroids */}
+          <button
+            onClick={() => addRealAsteroid("Ceres", "1")}
+            disabled={
+              isLoadingNASAData ||
+              celestialBodies.some((b) => b.name === "Ceres")
+            }
+            className="px-4 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Ceres (1)
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("Pallas", "2")}
+            disabled={
+              isLoadingNASAData ||
+              celestialBodies.some((b) => b.name === "Pallas")
+            }
+            className="px-4 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Pallas (2)
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("Juno", "3")}
+            disabled={
+              isLoadingNASAData ||
+              celestialBodies.some((b) => b.name === "Juno")
+            }
+            className="px-4 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Juno (3)
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("Hygiea", "10")}
+            disabled={
+              isLoadingNASAData ||
+              celestialBodies.some((b) => b.name === "Hygiea")
+            }
+            className="px-4 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Hygiea (10)
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("Interamnia", "704")}
+            disabled={
+              isLoadingNASAData ||
+              celestialBodies.some((b) => b.name === "Interamnia")
+            }
+            className="px-4 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Interamnia (704)
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("Itokawa", "25143")}
+            disabled={
+              isLoadingNASAData ||
+              celestialBodies.some((b) => b.name === "Itokawa")
+            }
+            className="px-4 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Itokawa (25143)
+          </button>
+
+          {/* Near-Earth Asteroids with Close Approaches */}
+          <button
+            onClick={() => addRealAsteroid("2019 OK", "2019 OK")}
+            disabled={
+              isLoadingNASAData ||
+              celestialBodies.some((b) => b.name === "2019 OK")
+            }
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-gray-200 rounded font-semibold text-sm disabled:opacity-50"
+          >
+            2019 OK
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("2023 DW", "2023 DW")}
+            disabled={
+              isLoadingNASAData ||
+              celestialBodies.some((b) => b.name === "2023 DW")
+            }
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-gray-200 rounded font-semibold text-sm disabled:opacity-50"
+          >
+            2023 DW
+          </button>
+
+          <button
+            onClick={() => addRealAsteroid("2024 PT5", "2024 PT5")}
+            disabled={
+              isLoadingNASAData ||
+              celestialBodies.some((b) => b.name === "2024 PT5")
+            }
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-gray-200 rounded font-semibold text-sm disabled:opacity-50"
+          >
+            2024 PT5
+          </button>
+        </div>
+        <div className="mt-3 flex items-center justify-center gap-2">
+          <input
+            type="text"
+            placeholder="Designation (e.g. 99942 or 2025 AB)"
+            value={manualDesignation}
+            onChange={(e) => setManualDesignation(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleAddByDesignation();
+              }
+            }}
+            className="px-3 py-2 bg-[#1e1e30] text-gray-200 rounded w-56 border-2 border-[#3b82f5] focus:ring-2 focus:ring-[#3b82f5] focus:outline-none transition-all shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.6)]"
+          />
+          <input
+            type="text"
+            placeholder="Optional display name"
+            value={manualName}
+            onChange={(e) => setManualName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleAddByDesignation();
+              }
+            }}
+            className="px-3 py-2 bg-[#1e1e30] text-gray-200 rounded w-44 border-2 border-[#3b82f5] focus:ring-2 focus:ring-[#3b82f5] focus:outline-none transition-all shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.6)]"
+          />
+          <button
+            onClick={() => handleAddByDesignation()}
+            disabled={isLoadingNASAData || !manualDesignation.trim()}
+            className="px-4 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded font-semibold text-sm disabled:opacity-50"
+          >
+            Add
+          </button>
+        </div>
+      </div>
 
       {showAddObject && (
-        <div className="mt-6 bg-gray-800 p-6 rounded-lg max-w-3xl w-full">
-          <h3 className="text-white font-bold text-lg mb-4">
+        <div className="mt-6 bg-[#1e1e30] p-6 rounded-lg max-w-3xl w-full">
+          <h3 className="text-gray-200 font-bold text-lg mb-4">
             Add Custom Celestial Object
           </h3>
 
@@ -1816,7 +1869,7 @@ const SolarSystem = () => {
                 onChange={(e) =>
                   setNewObject({ ...newObject, name: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded"
+                className="w-full px-3 py-2 bg-[#1e1e30] text-gray-200 rounded border-2 border-[#3b82f5] focus:ring-2 focus:ring-[#3b82f5] focus:outline-none transition-all shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.6)]"
                 placeholder="e.g., Halley's Comet"
               />
             </div>
@@ -1830,7 +1883,7 @@ const SolarSystem = () => {
                 onChange={(e) =>
                   setNewObject({ ...newObject, type: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded"
+                className="w-full px-3 py-2 bg-[#1e1e30] text-gray-200 rounded border-2 border-[#3b82f5] focus:ring-2 focus:ring-[#3b82f5] focus:outline-none transition-all shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.6)] cursor-pointer"
               >
                 <option value="asteroid">Asteroid</option>
                 <option value="comet">Comet</option>
@@ -1852,7 +1905,7 @@ const SolarSystem = () => {
                     distanceKm: parseFloat(e.target.value),
                   })
                 }
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded"
+                className="w-full px-3 py-2 bg-[#1e1e30] text-gray-200 rounded border-2 border-[#3b82f5] focus:ring-2 focus:ring-[#3b82f5] focus:outline-none transition-all shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.6)]"
                 min="10"
                 max="10000"
               />
@@ -1874,7 +1927,7 @@ const SolarSystem = () => {
                     eccentricity: parseFloat(e.target.value),
                   })
                 }
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded"
+                className="w-full px-3 py-2 bg-[#1e1e30] text-gray-200 rounded border-2 border-[#3b82f5] focus:ring-2 focus:ring-[#3b82f5] focus:outline-none transition-all shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.6)]"
                 min="0"
                 max="0.99"
                 step="0.01"
@@ -1897,7 +1950,7 @@ const SolarSystem = () => {
                     mass: parseFloat(e.target.value),
                   })
                 }
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded"
+                className="w-full px-3 py-2 bg-[#1e1e30] text-gray-200 rounded border-2 border-[#3b82f5] focus:ring-2 focus:ring-[#3b82f5] focus:outline-none transition-all shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.6)]"
                 step="1e10"
               />
               <span className="text-xs text-gray-400">
@@ -1915,10 +1968,12 @@ const SolarSystem = () => {
                 onChange={(e) =>
                   setNewObject({
                     ...newObject,
-                    diameter: e.target.value ? parseFloat(e.target.value) : null,
+                    diameter: e.target.value
+                      ? parseFloat(e.target.value)
+                      : null,
                   })
                 }
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded"
+                className="w-full px-3 py-2 bg-[#1e1e30] text-gray-200 rounded border-2 border-[#3b82f5] focus:ring-2 focus:ring-[#3b82f5] focus:outline-none transition-all shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.6)]"
                 step="1"
                 placeholder="Auto-calculated from mass"
               />
@@ -1935,7 +1990,7 @@ const SolarSystem = () => {
                 onChange={(e) =>
                   setNewObject({ ...newObject, composition: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded"
+                className="w-full px-3 py-2 bg-[#1e1e30] text-gray-200 rounded border-2 border-[#3b82f5] focus:ring-2 focus:ring-[#3b82f5] focus:outline-none transition-all shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.6)]"
               >
                 <option value="Rocky">Rocky (Silicate)</option>
                 <option value="Metallic">Metallic (Iron-Nickel)</option>
@@ -1958,7 +2013,7 @@ const SolarSystem = () => {
                     perihelionArg: parseFloat(e.target.value),
                   })
                 }
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded"
+                className="w-full px-3 py-2 bg-[#1e1e30] text-gray-200 rounded border-2 border-[#3b82f5] focus:ring-2 focus:ring-[#3b82f5] focus:outline-none transition-all shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.6)]"
                 min="0"
                 max="360"
               />
@@ -1980,7 +2035,7 @@ const SolarSystem = () => {
                     radius: parseInt(e.target.value),
                   })
                 }
-                className="w-full px-3 py-2 bg-gray-700 text-white rounded"
+                className="w-full px-3 py-2 bg-[#1e1e30] text-gray-200 rounded border-2 border-[#3b82f5] focus:ring-2 focus:ring-[#3b82f5] focus:outline-none transition-all shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.6)]"
                 min="2"
                 max="30"
               />
@@ -1997,12 +2052,12 @@ const SolarSystem = () => {
                 onChange={(e) =>
                   setNewObject({ ...newObject, color: e.target.value })
                 }
-                className="w-full h-10 bg-gray-700 rounded cursor-pointer"
+                className="w-full h-10 bg-[#1e1e30] rounded cursor-pointer border-2 border-[#3b82f5] focus:ring-2 focus:ring-[#3b82f5] focus:outline-none transition-all shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.6)]"
               />
             </div>
           </div>
 
-          <div className="mt-4 p-3 bg-gray-700 rounded">
+          <div className="mt-4 p-3 bg-[#1e1e30] rounded">
             <p className="text-sm text-gray-300">
               <strong>Calculated Orbital Period:</strong>{" "}
               {calculateOrbitalPeriod(newObject.distanceKm).toFixed(2)} Earth
@@ -2023,8 +2078,14 @@ const SolarSystem = () => {
             {!newObject.diameter && newObject.mass && (
               <p className="text-sm text-gray-300 mt-1">
                 <strong>Estimated Diameter:</strong>{" "}
-                {calculateDiameterFromMass(newObject.mass, newObject.composition).toFixed(2)} meters
-                <span className="text-xs text-gray-400 ml-2">(from mass & composition)</span>
+                {calculateDiameterFromMass(
+                  newObject.mass,
+                  newObject.composition
+                ).toFixed(2)}{" "}
+                meters
+                <span className="text-xs text-gray-400 ml-2">
+                  (from mass & composition)
+                </span>
               </p>
             )}
           </div>
@@ -2032,13 +2093,13 @@ const SolarSystem = () => {
           <div className="mt-6 flex gap-3 justify-end">
             <button
               onClick={() => setShowAddObject(false)}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded"
+              className="px-4 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded"
             >
               Cancel
             </button>
             <button
               onClick={addCustomObject}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-gray-200 rounded font-semibold"
             >
               Add to Simulation
             </button>
@@ -2063,7 +2124,7 @@ const SolarSystem = () => {
                     inclination: 0,
                   })
                 }
-                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs"
+                className="px-3 py-1 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded text-xs"
               >
                 Halley's Comet
               </button>
@@ -2083,7 +2144,7 @@ const SolarSystem = () => {
                     inclination: 0,
                   })
                 }
-                className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-xs"
+                className="px-3 py-1 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded text-xs"
               >
                 Ceres (Dwarf Planet)
               </button>
@@ -2103,7 +2164,7 @@ const SolarSystem = () => {
                     inclination: 0,
                   })
                 }
-                className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs"
+                className="px-3 py-1 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded text-xs"
               >
                 Pluto
               </button>
@@ -2123,7 +2184,7 @@ const SolarSystem = () => {
                     inclination: 0,
                   })
                 }
-                className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs"
+                className="px-3 py-1 bg-gray-600 hover:bg-[#3b82f5] text-gray-200 rounded text-xs"
               >
                 Bennu (Asteroid)
               </button>
@@ -2143,7 +2204,7 @@ const SolarSystem = () => {
                     inclination: 0,
                   })
                 }
-                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs animate-pulse"
+                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-gray-200 rounded text-xs animate-pulse"
               >
                 The Collider (COLLISION COURSE!)
               </button>
@@ -2157,8 +2218,8 @@ const SolarSystem = () => {
       )}
 
       {celestialBodies.filter((b) => b.type !== "planet").length > 0 && (
-        <div className="mt-4 bg-gray-800 p-4 rounded-lg max-w-3xl w-full">
-          <h3 className="text-white font-bold mb-3">
+        <div className="mt-4 bg-[#1e1e30] p-4 rounded-lg max-w-3xl w-full">
+          <h3 className="text-gray-200 font-bold mb-3">
             Custom Objects (Removable)
           </h3>
           <div className="space-y-2">
@@ -2167,7 +2228,7 @@ const SolarSystem = () => {
               .map((body) => (
                 <div
                   key={body.id}
-                  className="flex items-center justify-between bg-gray-700 p-3 rounded"
+                  className="flex items-center justify-between bg-[#1e1e30] p-3 rounded"
                 >
                   <div className="flex items-center gap-3">
                     <div
@@ -2175,7 +2236,7 @@ const SolarSystem = () => {
                       className="w-4 h-4 rounded-full"
                     ></div>
                     <div>
-                      <p className="text-white font-semibold">{body.name}</p>
+                      <p className="text-gray-200 font-semibold">{body.name}</p>
                       <p className="text-xs text-gray-400">
                         {body.type} - {body.distanceKm}M km - e=
                         {body.eccentricity} - {body.composition}
@@ -2185,13 +2246,13 @@ const SolarSystem = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => analyzeObject(body)}
-                      className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm"
+                      className="px-3 py-1 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded text-sm"
                     >
                       Impact Analysis
                     </button>
                     <button
                       onClick={() => removeCustomObject(body.id)}
-                      className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                      className="px-3 py-1 bg-red-600 hover:bg-red-700 text-gray-200 rounded text-sm"
                     >
                       Remove
                     </button>
@@ -2205,24 +2266,24 @@ const SolarSystem = () => {
       {showImpactAnalysis && impactData && selectedObjectForAnalysis && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div
-            className="bg-gray-800 rounded-lg p-6 max-w-4xl w-full my-8"
+            className="bg-[#1e1e30] rounded-lg p-6 max-w-4xl w-full my-8"
             style={{ maxHeight: "calc(100vh - 4rem)", overflowY: "auto" }}
           >
-            <div className="flex justify-between items-start mb-4 sticky top-0 bg-gray-800 z-10 pb-2">
-              <h2 className="text-2xl font-bold text-white">
+            <div className="flex justify-between items-start mb-4 sticky top-0 bg-[#1e1e30] z-10 pb-2">
+              <h2 className="text-2xl font-bold text-gray-200">
                 Impact Analysis: {selectedObjectForAnalysis.name}
               </h2>
               <button
                 onClick={() => setShowImpactAnalysis(false)}
-                className="text-gray-400 hover:text-white text-2xl"
+                className="text-gray-400 hover:text-gray-200 text-2xl"
               >
                 ×
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-gray-700 p-4 rounded">
-                <h3 className="text-white font-bold mb-2">
+              <div className="bg-[#1e1e30] p-4 rounded">
+                <h3 className="text-gray-200 font-bold mb-2">
                   Orbital Intersection
                 </h3>
                 <p className="text-gray-300 text-sm mb-2">
@@ -2250,8 +2311,8 @@ const SolarSystem = () => {
                 </p>
               </div>
 
-              <div className="bg-gray-700 p-4 rounded">
-                <h3 className="text-white font-bold mb-2">
+              <div className="bg-[#1e1e30] p-4 rounded">
+                <h3 className="text-gray-200 font-bold mb-2">
                   Impact Risk Assessment
                 </h3>
                 <p className="text-gray-300 text-sm mb-2">
@@ -2261,12 +2322,12 @@ const SolarSystem = () => {
                       impactData.riskLevel === "Extreme"
                         ? "text-red-500 font-bold"
                         : impactData.riskLevel === "High"
-                        ? "text-orange-500 font-bold"
+                        ? "text-red-400 font-bold"
                         : impactData.riskLevel === "Moderate"
-                        ? "text-yellow-500"
+                        ? "text-gray-300"
                         : impactData.riskLevel === "Low"
-                        ? "text-blue-400"
-                        : "text-green-400"
+                        ? "text-gray-400"
+                        : "text-gray-300"
                     }
                   >
                     {impactData.riskLevel}
@@ -2276,16 +2337,16 @@ const SolarSystem = () => {
                   <strong>Impact Probability:</strong>{" "}
                   {impactData.impactProbability.toFixed(4)}%
                 </p>
-                <div className="bg-gray-600 h-4 rounded-full overflow-hidden mt-2">
+                <div className="bg-[#1e1e30] h-4 rounded-full overflow-hidden mt-2">
                   <div
                     className={`h-full ${
                       impactData.riskLevel === "Extreme"
-                        ? "bg-red-500"
+                        ? "bg-red-600"
                         : impactData.riskLevel === "High"
-                        ? "bg-orange-500"
+                        ? "bg-red-500"
                         : impactData.riskLevel === "Moderate"
-                        ? "bg-yellow-500"
-                        : "bg-blue-400"
+                        ? "bg-gray-600"
+                        : "bg-gray-700"
                     }`}
                     style={{
                       width: `${Math.min(100, impactData.impactProbability)}%`,
@@ -2293,19 +2354,21 @@ const SolarSystem = () => {
                   ></div>
                 </div>
               </div>
-
-
             </div>
 
-            <div className="bg-gray-700 p-4 rounded mb-4">
-              <h3 className="text-white font-bold mb-2">Object Details</h3>
+            <div className="bg-[#1e1e30] p-4 rounded mb-4">
+              <h3 className="text-gray-200 font-bold mb-2">Object Details</h3>
               <div className="grid grid-cols-2 gap-2 text-sm text-gray-300">
                 <div>
-                  <strong>Type:</strong> {selectedObjectForAnalysis.type || "Unknown"}
+                  <strong>Type:</strong>{" "}
+                  {selectedObjectForAnalysis.type || "Unknown"}
                 </div>
                 <div>
                   <strong>Mass:</strong>{" "}
-                  {selectedObjectForAnalysis.mass ? selectedObjectForAnalysis.mass.toExponential(2) : "N/A"} kg
+                  {selectedObjectForAnalysis.mass
+                    ? selectedObjectForAnalysis.mass.toExponential(2)
+                    : "N/A"}{" "}
+                  kg
                 </div>
                 {selectedObjectForAnalysis.diameter && (
                   <div>
@@ -2319,11 +2382,16 @@ const SolarSystem = () => {
                 </div>
                 <div>
                   <strong>Semi-major Axis:</strong>{" "}
-                  {selectedObjectForAnalysis.distanceKm ? selectedObjectForAnalysis.distanceKm.toFixed(1) : "N/A"} M km
+                  {selectedObjectForAnalysis.distanceKm
+                    ? selectedObjectForAnalysis.distanceKm.toFixed(1)
+                    : "N/A"}{" "}
+                  M km
                 </div>
                 <div>
                   <strong>Eccentricity:</strong>{" "}
-                  {selectedObjectForAnalysis.eccentricity ? selectedObjectForAnalysis.eccentricity.toFixed(3) : "N/A"}
+                  {selectedObjectForAnalysis.eccentricity
+                    ? selectedObjectForAnalysis.eccentricity.toFixed(3)
+                    : "N/A"}
                 </div>
                 {selectedObjectForAnalysis.periodDays && (
                   <div>
@@ -2340,8 +2408,10 @@ const SolarSystem = () => {
               </div>
             </div>
 
-            <div className="bg-gray-700 p-4 rounded">
-              <h3 className="text-white font-bold mb-3">Impact Comparison</h3>
+            <div className="bg-[#1e1e30] p-4 rounded">
+              <h3 className="text-gray-200 font-bold mb-3">
+                Impact Comparison
+              </h3>
               <div className="space-y-2 text-sm text-gray-300">
                 {impactData.energyMegatons < 0.001 && (
                   <p>
@@ -2378,7 +2448,7 @@ const SolarSystem = () => {
                 )}
 
                 {impactData.craterDiameter > 1000 && (
-                  <p className="mt-2 text-yellow-400">
+                  <p className="mt-2 text-gray-300">
                     <strong>Warning:</strong> Crater diameter exceeds 1 km -
                     would cause widespread devastation
                   </p>
@@ -2398,22 +2468,25 @@ const SolarSystem = () => {
                 onClick={() => {
                   // Get exact values from impact analysis report
                   const impactVelocity = impactData.impactVelocity; // km/s from report
-                  const diameter = selectedObjectForAnalysis.diameter || 'unknown'; // meters
-                  const composition = (selectedObjectForAnalysis.composition || 'Rocky').toLowerCase();
-                  
+                  const diameter =
+                    selectedObjectForAnalysis.diameter || "unknown"; // meters
+                  const composition = (
+                    selectedObjectForAnalysis.composition || "Rocky"
+                  ).toLowerCase();
+
                   // Construct API URL with parameters
-                  const apiUrl = `https://meteor-impact-cal.vercel.app/?velocity=${impactVelocity}&diameter=${diameter}&composition=${composition}`;
-                  
+                  const apiUrl = `https://impact.meteosim.earth/?velocity=${impactVelocity}&diameter=${diameter}&composition=${composition}`;
+
                   // Open in new tab
-                  window.open(apiUrl, '_blank');
+                  window.open(apiUrl, "_blank");
                 }}
-                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold"
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-gray-200 rounded-lg font-semibold"
               >
-                Send to Test API
+                Simulate Impact
               </button>
               <button
                 onClick={() => setShowImpactAnalysis(false)}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold"
+                className="px-6 py-2 bg-[#1e1e30] hover:bg-[#3b82f5] text-gray-200 rounded-lg font-semibold"
               >
                 Close Analysis
               </button>
